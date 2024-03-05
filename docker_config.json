@@ -1,0 +1,7 @@
+{
+ "notifiers":[
+    {"type":"shoutrrr", "params":{"url":"$SHOUTRRR"}}
+ ],
+ "cache": "/app/cache.json"
+}
+
