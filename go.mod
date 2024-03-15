@@ -4,7 +4,7 @@ go 1.22.1
 
 require (
 	github.com/containrrr/shoutrrr v0.8.0
-	github.com/docker/docker v25.0.3+incompatible
+	github.com/docker/docker v25.0.4+incompatible
 	gotest.tools/v3 v3.5.1
 )
 
