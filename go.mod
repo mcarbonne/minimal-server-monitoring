@@ -1,10 +1,11 @@
 module github.com/mcarbonne/minimal-server-monitoring
 
-go 1.21.5
+go 1.22.1
 
 require (
 	github.com/containrrr/shoutrrr v0.8.0
 	github.com/docker/docker v25.0.3+incompatible
+	gotest.tools/v3 v3.5.1
 )
 
 require (
@@ -18,6 +19,7 @@ require (
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/moby/term v0.5.0 // indirect
@@ -35,5 +37,4 @@ require (
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.18.0 // indirect
-	gotest.tools/v3 v3.5.1 // indirect
 )
