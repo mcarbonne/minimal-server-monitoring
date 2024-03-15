@@ -8,6 +8,13 @@ APP_NAME=minimal-server-monitoring
 build:
 	go build -o $(APP_NAME) ./cmd/$(APP_NAME)
 
+test-coverage:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+
+test:
+	go test ./...
+
 local-run:
 	go run cmd/$(APP_NAME)/$(APP_NAME).go config.json
 
