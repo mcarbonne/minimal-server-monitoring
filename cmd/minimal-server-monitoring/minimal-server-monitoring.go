@@ -5,23 +5,18 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/alert"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/alert/notifier"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/config"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/metric"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/metric/providers"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
 )
 
 func usage() {
 	fmt.Println("Usage: " + os.Args[0] + " config.json")
-}
-
-func eventToMessage(evt metric.Event) notifier.Message {
-	return notifier.MakeMessage(evt.Topic, fmt.Sprintf("%v", evt.EventType), evt.Description)
 }
 
 func main() {
@@ -39,8 +34,8 @@ func main() {
 	storage := storage.NewJSONStorage(cfg.CachePath)
 	storage.Sync(true) // Test if storage can be synced
 
-	messageChannel := make(chan notifier.Message, 5)
-	eventChannel := make(chan metric.Event, 5)
+	scrapeResultChan := make(chan provider.ScrapeResult, 5)
+	notifyChan := make(chan notifier.Message, 5)
 
 	go func() {
 		<-signalChan
@@ -51,18 +46,13 @@ func main() {
 
 	// alert center (send notifications)
 	go func() {
-		alert.AlertCenter(cfg.Notifiers, messageChannel)
+		alert.AlertCenter(cfg.Alert, scrapeResultChan, notifyChan)
 	}()
 
-	// transform events to notifications
 	go func() {
-		for evt := range eventChannel {
-			messageChannel <- eventToMessage(evt)
-		}
+		notifier.LoadAndRunNotifiers(cfg.Notifiers, notifyChan)
 	}()
 
-	// Start metric gathering
-	var metricsToTest []*metric.Metric
-	metricsToTest = append(metricsToTest, metric.MakeMetric("docker", providers.NewDockerProvider(), metric.MakePolicy(time.Second*5)))
-	metric.ScheduleMetrics(metricsToTest, storage, eventChannel)
+	// Start metric scraping
+	scraping.ScheduleScraping(cfg.Providers, storage, scrapeResultChan)
 }

@@ -15,6 +15,9 @@ test-coverage:
 test:
 	go test ./...
 
+generate:
+	go generate ./...
+
 local-run:
 	go run cmd/$(APP_NAME)/$(APP_NAME).go config.json
 
