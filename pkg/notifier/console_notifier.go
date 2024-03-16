@@ -12,6 +12,6 @@ func NewConsoleNotifier() Notifier {
 }
 
 func (l *ConsoleNotifier) Send(message Message) error {
-	logging.Info("New message:\nTitle : %v\nMessage: %v", message.Title, message.Message)
+	logging.Info("New message:\nTitle: [%v]\nMessage: %v", message.Title, message.Message)
 	return nil
 }

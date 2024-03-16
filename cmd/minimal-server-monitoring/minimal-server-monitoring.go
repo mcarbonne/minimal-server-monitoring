@@ -50,7 +50,7 @@ func main() {
 	}()
 
 	go func() {
-		notifier.LoadAndRunNotifiers(cfg.Notifiers, notifyChan)
+		notifier.LoadAndRunNotifiers(cfg.MachineName, cfg.Notifiers, notifyChan)
 	}()
 
 	// Start metric scraping

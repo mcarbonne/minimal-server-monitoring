@@ -2,9 +2,7 @@ package notifier
 
 import (
 	"fmt"
-	"os"
-
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
+	"strings"
 )
 
 //go:generate stringer -type MessageType
@@ -25,14 +23,9 @@ type Message struct {
 }
 
 func MakeMessage(type_ MessageType, descriptionFormat string, args ...any) Message {
-	hostname, err := os.Hostname()
-	if err != nil {
-		logging.Warning("Unable to get hostname")
-	}
-
 	return Message{
 		Type:    type_,
-		Title:   fmt.Sprintf("%v %v", hostname, type_),
+		Title:   strings.ToLower(fmt.Sprintf("%v", type_)),
 		Message: fmt.Sprintf(descriptionFormat, args...),
 	}
 }
@@ -45,16 +38,16 @@ func MakeAggregatedMessage(msgList []Message) Message {
 		description += " - " + msg.Message + "\n"
 	}
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		logging.Warning("Unable to get hostname")
-	} else {
-		title = hostname
-	}
-
+	first := true
 	for type_, cnt := range msgTypeMap {
-		title += fmt.Sprintf(" %v: %v", type_, cnt)
+		if first {
+			title += fmt.Sprintf("%v: %v", type_, cnt)
+		} else {
+			title += fmt.Sprintf(", %v: %v", type_, cnt)
+		}
+		first = false
 	}
+	title = strings.ToLower(title)
 
 	return Message{
 		Type:    Aggregate,

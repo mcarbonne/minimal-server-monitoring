@@ -1,4 +1,5 @@
 {
+ "machine_name":"$MACHINENAME",
  "notifiers":[
     {"type":"shoutrrr", "params":{"url":"$SHOUTRRR"}}
  ],

@@ -13,10 +13,11 @@ import (
 )
 
 type Config struct {
-	Notifiers []notifier.Config          `json:"notifiers"`
-	Alert     alert.Config               `json:"alert"`
-	Providers map[string]provider.Config `json:"providers"`
-	CachePath string                     `json:"cache"`
+	MachineName string                     `json:"machine_name" default:""`
+	Notifiers   []notifier.Config          `json:"notifiers"`
+	Alert       alert.Config               `json:"alert"`
+	Providers   map[string]provider.Config `json:"providers"`
+	CachePath   string                     `json:"cache"`
 }
 
 func strictGetEnv(key string) string {
@@ -48,5 +49,10 @@ func LoadConfiguration(configPath string) Config {
 	if err != nil {
 		logging.Fatal("Error loading config: %v", err)
 	}
+
+	if config.MachineName == "" {
+		config.MachineName, _ = os.Hostname()
+	}
+
 	return config
 }

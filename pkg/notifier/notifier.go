@@ -21,7 +21,7 @@ func LoadNotifierFromConfig(cfg Config) (Notifier, error) {
 	}
 }
 
-func LoadAndRunNotifiers(notifierCfgList []Config, messageChan <-chan Message) {
+func LoadAndRunNotifiers(machineName string, notifierCfgList []Config, messageChan <-chan Message) {
 	notifierList := make([]Notifier, len(notifierCfgList))
 	var err error
 	for i, notifierCfg := range notifierCfgList {
@@ -31,6 +31,7 @@ func LoadAndRunNotifiers(notifierCfgList []Config, messageChan <-chan Message) {
 		}
 	}
 	for msg := range messageChan {
+		msg.Title = machineName + " " + msg.Title
 		for _, notifier := range notifierList {
 			notifier.Send(msg)
 		}
