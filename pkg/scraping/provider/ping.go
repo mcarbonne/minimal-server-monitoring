@@ -47,6 +47,6 @@ func (pingProvider *ProviderPing) Update(result *ScrapeResult, storage storage.S
 	if pingRetry(target, pingProvider.RetryCount) {
 		result.PushOK("ping_" + target)
 	} else {
-		result.PushFailure("ping_"+target, "Unable to ping %v", target)
+		result.PushFailure("ping_"+target, "unable to ping %v", target)
 	}
 }

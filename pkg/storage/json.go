@@ -37,6 +37,9 @@ func NewJSONStorage(jsonPath string) Storager {
 		logging.Fatal(err.Error())
 	}
 	js.database = decoded.Database
+	if js.database == nil {
+		js.database = make(map[string]string)
+	}
 
 	return js
 }

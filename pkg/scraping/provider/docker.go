@@ -77,6 +77,7 @@ func (dockerProvider *ProviderDocker) Update(result *ScrapeResult, storage stora
 		result.PushOK("general_list_container")
 	}
 
+	var inspectErrorList []error
 	for _, ctr := range containers {
 		dockerProvider.updateStateMetric(result, ctr)
 		dockerProvider.updateImageMetric(result, storage, ctr)
@@ -84,9 +85,14 @@ func (dockerProvider *ProviderDocker) Update(result *ScrapeResult, storage stora
 		inspect, err := dockerProvider.client.ContainerInspect(context.Background(), ctr.ID)
 		if err == nil {
 			dockerProvider.updateRestartCountMetric(result, ctr, inspect)
-			result.PushOK("general_inspect_container")
 		} else {
-			result.PushFailure("general_inspect_container", "unable to inspect container: %v", err)
+			inspectErrorList = append(inspectErrorList, err)
 		}
+	}
+
+	if len(inspectErrorList) > 0 {
+		result.PushFailure("general_inspect_container", "unable to inspect containers: %v", inspectErrorList)
+	} else {
+		result.PushOK("general_inspect_container")
 	}
 }

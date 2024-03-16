@@ -38,12 +38,12 @@ func (msm *MetricStateMachine) Update(metricState provider.MetricState) *notifie
 	if msm.isHealthy {
 		if msm.oppositeInARow >= msm.unhealthyThreshold {
 			msm.isHealthy = false
-			msg = utils.Ptr(notifier.MakeMessage(notifier.Failure, "Metric %v became unhealty", msm.metricId))
+			msg = utils.Ptr(notifier.MakeMessage(notifier.Failure, "metric %v failed: %v", msm.metricId, metricState.Description))
 		}
 	} else {
 		if msm.oppositeInARow >= msm.healthyThreshold {
 			msm.isHealthy = true
-			msg = utils.Ptr(notifier.MakeMessage(notifier.OK, "Metric %v became healty", msm.metricId))
+			msg = utils.Ptr(notifier.MakeMessage(notifier.OK, "metric %v is OK", msm.metricId))
 		}
 
 	}
