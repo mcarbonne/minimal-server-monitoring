@@ -1,25 +1,48 @@
 package alert
 
 import (
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/alert/notifier"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
 )
 
-func sendToAll(notifierList []notifier.Notifier, msg notifier.Message) {
-	for _, notifierInst := range notifierList {
-		notifierInst.Send(msg)
-	}
-}
+func AlertCenter(alertCfg Config, scrapResultChan <-chan provider.ScrapeResult, notifyChan chan<- notifier.Message) {
 
-func AlertCenter(notifierCfgList []notifier.Config, msgChan <-chan notifier.Message) {
-	notifiersList := make([]notifier.Notifier, len(notifierCfgList))
-	for i, notifierCfg := range notifierCfgList {
-		notifiersList[i] = notifier.LoadNotifierFromConfig(notifierCfg)
-	}
+	rawMessages := make(chan metricIdWithMsg)
+	filteredMessages := make(chan notifier.Message)
+	metricStateMachines := map[string]*MetricStateMachine{}
 
-	filtering := MakeAlertFilters()
+	//Step 1: convert scrape result to messages
+	go func(outputChan chan<- metricIdWithMsg) {
+		for scrapeResult := range scrapResultChan {
+			for metricId, metricState := range scrapeResult.MetricStateMap {
+				if metricStateMachines[metricId] == nil {
+					metricStateMachines[metricId] = MakeMetricStateMachine(metricId, alertCfg.HealthyThreshold, alertCfg.UnhealthyThreshold)
+				}
+				optMessage := metricStateMachines[metricId].Update(metricState)
 
-	for msg := range msgChan {
-		// filter to avoid notification spam
-		filtering.sendIfAllowed(msg, func(msg notifier.Message) { sendToAll(notifiersList, msg) })
-	}
+				if optMessage != nil {
+					outputChan <- metricIdWithMsg{
+						metricId: metricId,
+						message:  *optMessage}
+				}
+			}
+
+			for _, msg := range scrapeResult.MessageList {
+				outputChan <- metricIdWithMsg{
+					metricId: msg.MetricID,
+					message:  notifier.MakeMessage(notifier.Notification, msg.Description),
+				}
+			}
+		}
+	}(rawMessages)
+
+	//Step 2: filter messages
+	go func() {
+		MakeAndRunAlertFilters(rawMessages, filteredMessages)
+	}()
+
+	//Step 3: group messages
+	go func() {
+		MakeAndRunAlertGrouping(filteredMessages, notifyChan)
+	}()
 }
