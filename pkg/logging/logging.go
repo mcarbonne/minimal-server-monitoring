@@ -1,48 +1,50 @@
 package logging
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"runtime/debug"
 )
 
-type LoggerSet struct {
-	Debug   *log.Logger
-	Info    *log.Logger
-	Warning *log.Logger
-	Error   *log.Logger
-	Fatal   *log.Logger
-}
-
 var (
-	loggerSet LoggerSet
+	defaultLogger = log.New(os.Stdout, "", log.Ldate|log.Lmicroseconds|log.Lmsgprefix)
 )
 
-func init() {
-	loggerSet.Debug = log.New(os.Stdout, "[DEBUG]   ", log.Ldate|log.Lmicroseconds|log.Lmsgprefix)
-	loggerSet.Info = log.New(os.Stdout, "[INFO]    ", log.Ldate|log.Lmicroseconds|log.Lmsgprefix)
-	loggerSet.Warning = log.New(os.Stdout, "[WARNING] ", log.Ldate|log.Lmicroseconds|log.Lmsgprefix)
-	loggerSet.Error = log.New(os.Stderr, "[ERROR]   ", log.Ldate|log.Lmicroseconds|log.Lmsgprefix)
-	loggerSet.Fatal = log.New(os.Stderr, "[FATAL]   ", log.Ldate|log.Lmicroseconds|log.Lmsgprefix)
+func Log(level, format string, args ...any) {
+	_, file, line, ok := runtime.Caller(2)
+	if !ok {
+		file = "???"
+		line = 0
+	} else {
+		for i := len(file) - 1; i > 0; i-- {
+			if file[i] == '/' {
+				file = file[i+1:]
+				break
+			}
+		}
+	}
+	defaultLogger.Printf("%-6v %v:%v\t%v", level, file, line, fmt.Sprintf(format, args...))
 }
 
 func Debug(format string, args ...any) {
-	loggerSet.Debug.Printf(format, args...)
+	Log("DEBUG", format, args...)
 }
 
 func Info(format string, args ...any) {
-	loggerSet.Info.Printf(format, args...)
+	Log("INFO", format, args...)
 }
 
 func Warning(format string, args ...any) {
-	loggerSet.Warning.Printf(format, args...)
+	Log("WARN", format, args...)
 }
 
 func Error(format string, args ...any) {
-	loggerSet.Error.Printf(format, args...)
+	Log("ERROR", format, args...)
 }
 
 func Fatal(format string, args ...any) {
-	loggerSet.Error.Printf(format, args...)
-	loggerSet.Error.Fatal(string(debug.Stack()))
+	Log("FATAL", format, args...)
+	defaultLogger.Fatal(string(debug.Stack()))
 }
