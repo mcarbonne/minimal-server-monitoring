@@ -4,18 +4,24 @@ import (
 	"github.com/containrrr/shoutrrr"
 	"github.com/containrrr/shoutrrr/pkg/router"
 	"github.com/containrrr/shoutrrr/pkg/types"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
 )
 
 type Shoutrrr struct {
+	Url    string `json:"url"`
 	router *router.ServiceRouter
 }
 
-func NewShoutrrr(url string) (Notifier, error) {
-	router, err := shoutrrr.CreateSender(url)
+func NewShoutrrr(params params) (Notifier, error) {
+	notifier, err := utils.MapOnStruct[Shoutrrr](params)
 	if err != nil {
 		return nil, err
 	}
-	return &Shoutrrr{router: router}, nil
+	notifier.router, err = shoutrrr.CreateSender(notifier.Url)
+	if err != nil {
+		return nil, err
+	}
+	return &notifier, nil
 }
 
 func (shoutrrr *Shoutrrr) Send(message Message) error {
