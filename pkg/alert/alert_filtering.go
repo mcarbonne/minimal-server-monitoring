@@ -3,60 +3,74 @@ package alert
 import (
 	"time"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/alert/notifier"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
 )
 
 const maximumNotificationThreshold int = 5
 const maximumNotificationThresholdWindow time.Duration = 30 * time.Minute
-const alertFilteringTopic = "alert_filtering"
 
-type topicFilter struct {
-	currentIndex                    int
-	lastNotificationsCircularBuffer [maximumNotificationThreshold]time.Time
-	spamCount                       int
+type metricFilter struct {
+	metricId          string
+	lastNotifications utils.CircularBuffer[time.Time]
+	spamCount         int
 }
 
 type alertFilters struct {
-	filters map[string]*topicFilter
+	filters map[string]*metricFilter
+	input   <-chan metricIdWithMsg
+	output  chan<- notifier.Message
 }
 
-func MakeAlertFilters() *alertFilters {
-	return &alertFilters{
-		filters: make(map[string]*topicFilter),
-	}
+type metricIdWithMsg struct {
+	metricId string
+	message  notifier.Message
 }
 
-func (tf *topicFilter) sendIfAllowed(msg notifier.Message, notify func(notifier.Message)) {
-	tf.lastNotificationsCircularBuffer[tf.currentIndex] = time.Now()
-	tf.currentIndex = (tf.currentIndex + 1) % maximumNotificationThreshold
-	oldestEntry := tf.lastNotificationsCircularBuffer[tf.currentIndex]
+func (mf *metricFilter) forwardToOutputIfAllowed(metricId string, msg notifier.Message, output chan<- notifier.Message) {
+	now := time.Now()
+	mf.lastNotifications.Push(now)
+	oldestEntry := mf.lastNotifications.Front()
 
-	if time.Since(oldestEntry) <= maximumNotificationThresholdWindow {
-		if tf.spamCount > 0 {
-			logging.Debug("Topic %v: still spamming", msg.Topic)
+	if now.Sub(oldestEntry) <= maximumNotificationThresholdWindow && mf.lastNotifications.Full() {
+		if mf.spamCount > 0 {
+			logging.Debug("Metric %v: still spamming", mf.metricId)
 		} else {
-			notify(notifier.MakeMessage(alertFilteringTopic, "spam detected", "Notification spam detected (topic: %v), skipping notifications", msg.Topic))
-			logging.Warning("Topic %v: spam detected", msg.Topic)
+			output <- notifier.MakeMessage(notifier.Failure, "Notification spam detected (metricId: %v), skipping notifications", metricId)
+			logging.Warning("Metric %v: spam detected", mf.metricId)
 		}
-		tf.spamCount++
-	} else if tf.spamCount > 0 {
-		logging.Info("Topic %v: end of spam (%v message lost)", msg.Topic, tf.spamCount)
-		notify(notifier.MakeMessage(alertFilteringTopic, "end of spam", "Notification spam has ended (topic: %v), %v message lost", msg.Topic, tf.spamCount))
-		tf.spamCount = 0
+		mf.spamCount++
+	} else if mf.spamCount > 0 {
+		logging.Info("Metric %v: end of spam (%v message lost)", mf.metricId, mf.spamCount)
+		output <- notifier.MakeMessage(notifier.OK, "Notification spam has ended (metricId: %v, lost: %v)", metricId, mf.spamCount)
+		mf.spamCount = 0
 	}
 
-	if tf.spamCount == 0 {
-		logging.Debug("Sending : %v", msg)
-		notify(msg)
+	if mf.spamCount == 0 {
+		logging.Debug("Forwarding : %v", msg)
+		output <- msg
 	} else {
 		logging.Debug("Filtering : %v", msg)
 	}
 }
 
-func (af *alertFilters) sendIfAllowed(msg notifier.Message, notify func(notifier.Message)) {
-	if af.filters[msg.Topic] == nil {
-		af.filters[msg.Topic] = &topicFilter{}
+func (af *alertFilters) forwardToOutputIfAllowed(metricId string, msg notifier.Message) {
+	if af.filters[metricId] == nil {
+		af.filters[metricId] = &metricFilter{
+			lastNotifications: utils.MakeCircularBuffer[time.Time](maximumNotificationThreshold),
+		}
 	}
-	af.filters[msg.Topic].sendIfAllowed(msg, notify)
+	af.filters[metricId].forwardToOutputIfAllowed(metricId, msg, af.output)
+}
+
+func MakeAndRunAlertFilters(input <-chan metricIdWithMsg, output chan<- notifier.Message) {
+	filtering := &alertFilters{
+		filters: make(map[string]*metricFilter),
+		input:   input,
+		output:  output,
+	}
+	for inputMsg := range filtering.input {
+		filtering.forwardToOutputIfAllowed(inputMsg.metricId, inputMsg.message)
+	}
 }
