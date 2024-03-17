@@ -10,8 +10,8 @@ import (
 )
 
 type ProviderPing struct {
-	Target     string `json:"target"`
-	RetryCount uint   `json:"retry_count" default:"3"`
+	Targets    []string `json:"targets"`
+	RetryCount uint     `json:"retry_count" default:"3"`
 }
 
 func ping(target string) bool {
@@ -43,11 +43,12 @@ func NewProviderPing(params map[string]any) Provider {
 }
 
 func (pingProvider *ProviderPing) Update(result *ScrapeResult, storage storage.Storager) {
-	target := pingProvider.Target
-	if pingRetry(target, pingProvider.RetryCount) {
-		result.PushOK("ping_" + target)
-	} else {
-		result.PushFailure("ping_"+target, "unable to ping %v", target)
+	for _, target := range pingProvider.Targets {
+		if pingRetry(target, pingProvider.RetryCount) {
+			result.PushOK("ping_" + target)
+		} else {
+			result.PushFailure("ping_"+target, "unable to ping %v", target)
+		}
 	}
 }
 

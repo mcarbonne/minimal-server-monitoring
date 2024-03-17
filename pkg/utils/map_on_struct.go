@@ -21,21 +21,31 @@ func getAs[Input any, Output any](input any) (reflect.Value, error) {
 
 func getDefaultValue(field reflect.StructField) (reflect.Value, error) {
 	var defaultValue reflect.Value
-	switch kind := field.Type.Kind(); kind {
-	case reflect.Slice, reflect.Array:
-		defaultValue = reflect.MakeSlice(field.Type, 0, 0)
-	case reflect.Map:
-		defaultValue = reflect.MakeMap(field.Type)
-	case reflect.Struct:
-		var err error
-		defaultValue, err = mapOnStruct(field.Type, map[string]any{}, "")
-		if err != nil {
-			return reflect.Value{}, fmt.Errorf("unable to default struct: %v", err)
-		}
-	}
 
 	if tag, ok := field.Tag.Lookup("default"); ok {
 		switch kind := field.Type.Kind(); kind {
+		case reflect.Slice, reflect.Array:
+			if tag == "[]" {
+				defaultValue = reflect.MakeSlice(field.Type, 0, 0)
+			} else {
+				return reflect.Value{}, fmt.Errorf("unsupported default value for array: %v", tag)
+			}
+		case reflect.Map:
+			if tag == "{}" {
+				defaultValue = reflect.MakeMap(field.Type)
+			} else {
+				return reflect.Value{}, fmt.Errorf("unsupported default value for map: %v", tag)
+			}
+		case reflect.Struct:
+			if tag == "{}" {
+				var err error
+				defaultValue, err = mapOnStruct(field.Type, map[string]any{}, "")
+				if err != nil {
+					return reflect.Value{}, fmt.Errorf("unable to default struct: %v", err)
+				}
+			} else {
+				return reflect.Value{}, fmt.Errorf("unsupported default value for map: %v", tag)
+			}
 		case reflect.Int:
 			intVal, err := strconv.ParseInt(tag, 10, 64)
 			if err != nil {

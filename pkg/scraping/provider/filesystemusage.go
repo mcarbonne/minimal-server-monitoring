@@ -22,10 +22,6 @@ func NewProviderFileSystemUsage(params map[string]any) Provider {
 		logging.Fatal("Unable to setup systemd provider: %v", err)
 	}
 
-	if len(cfg.MountPoints) == 0 {
-		logging.Fatal("No mountpoints provided")
-	}
-
 	return &cfg
 }
 

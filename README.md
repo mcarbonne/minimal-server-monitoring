@@ -98,7 +98,7 @@ Currently, the following scraper providers are implemented :
 #### ping
 |parameter|description|required|default value|
 |-----|-----------|--------|-------------|
-|target|ip address (or hostname) to ping|yes|-|
+|targets|lst of ip address (or hostname) to ping|yes|-|
 |retry_count|how many times to retry if ping failed|no|3|
 
 - provide one state: is target reachable.
