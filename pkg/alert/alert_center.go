@@ -14,7 +14,7 @@ func AlertCenter(alertCfg Config, scrapResultChan <-chan provider.ScrapeResult, 
 	//Step 1: convert scrape result to messages
 	go func(outputChan chan<- metricIdWithMsg) {
 		for scrapeResult := range scrapResultChan {
-			for metricId, metricState := range scrapeResult.MetricStateMap {
+			for metricId, metricState := range scrapeResult.StateMap {
 				if metricStateMachines[metricId] == nil {
 					metricStateMachines[metricId] = MakeMetricStateMachine(metricId, alertCfg.HealthyThreshold, alertCfg.UnhealthyThreshold)
 				}

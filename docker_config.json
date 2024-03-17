@@ -1,8 +1,17 @@
 {
- "machine_name":"$MACHINENAME",
- "notifiers":[
-    {"type":"shoutrrr", "params":{"url":"$SHOUTRRR"}}
- ],
- "cache": "/app/cache.json"
+   "machine_name": "$MACHINENAME",
+   "notifiers": [
+      {
+         "type": "shoutrrr",
+         "params": {
+            "url": "$SHOUTRRR"
+         }
+      }
+   ],
+   "scrapers": {
+      "docker": {
+         "type": "docker"
+      }
+   },
+   "cache": "/app/cache.json"
 }
-

@@ -17,16 +17,16 @@ type MetricMessage struct {
 }
 
 type ScrapeResult struct {
-	prefix         string
-	MetricStateMap map[string]MetricState // only one state per metric allowed
-	MessageList    []MetricMessage        // list of messages, multiple messages per metric allowed
+	prefix      string
+	StateMap    map[string]MetricState // only one state per metric allowed
+	MessageList []MetricMessage        // list of messages, multiple messages per metric allowed
 }
 
 func MakeScrapeResult(prefix string) ScrapeResult {
 	return ScrapeResult{
-		prefix:         prefix,
-		MetricStateMap: map[string]MetricState{},
-		MessageList:    []MetricMessage{},
+		prefix:      prefix,
+		StateMap:    map[string]MetricState{},
+		MessageList: []MetricMessage{},
 	}
 }
 
@@ -36,11 +36,11 @@ func (list *ScrapeResult) getFullID(metricId string) string {
 
 func (list *ScrapeResult) PushState(metricId string, isHealthy bool, description string, args ...any) {
 	fullID := list.getFullID(metricId)
-	_, exists := list.MetricStateMap[fullID]
+	_, exists := list.StateMap[fullID]
 	if exists {
 		logging.Fatal("%v already exists", metricId)
 	} else {
-		list.MetricStateMap[fullID] = MetricState{
+		list.StateMap[fullID] = MetricState{
 			IsHealthy:   isHealthy,
 			Description: fmt.Sprintf(description, args...),
 		}

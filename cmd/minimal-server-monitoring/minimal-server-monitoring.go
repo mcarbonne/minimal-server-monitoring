@@ -37,22 +37,22 @@ func main() {
 	scrapeResultChan := make(chan provider.ScrapeResult, 5)
 	notifyChan := make(chan notifier.Message, 5)
 
-	go func() {
-		<-signalChan
-		logging.Info("Exiting...")
-		storage.Sync(false)
-		os.Exit(1)
-	}()
-
-	// alert center (send notifications)
+	// alert center
 	go func() {
 		alert.AlertCenter(cfg.Alert, scrapeResultChan, notifyChan)
 	}()
 
+	// notifier
 	go func() {
 		notifier.LoadAndRunNotifiers(cfg.MachineName, cfg.Notifiers, notifyChan)
 	}()
 
 	// Start metric scraping
-	scraping.ScheduleScraping(cfg.Providers, storage, scrapeResultChan)
+	go func() {
+		scraping.ScheduleScraping(cfg.Scrapers, storage, scrapeResultChan)
+	}()
+
+	<-signalChan
+	logging.Info("Exiting...")
+	storage.Sync(false)
 }

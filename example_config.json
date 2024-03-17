@@ -1,0 +1,38 @@
+{
+    "notifiers": [
+        {
+            "type": "console"
+        },
+        {
+            "type": "shoutrrr",
+            "params":{
+                "url": "YOUR_SHOUTRRR_URL_HERE"
+            }
+        }
+    ],
+    "cache": "/tmp/cache.json",
+    "alert": {
+        "unhealthy_threshold": 1,
+        "healthy_threshold": 1
+    },
+    "scrapers": {
+        "docker": {
+            "type": "docker"
+        },
+        "gateway": {
+            "type": "ping",
+            "scrape_interval": 1,
+            "params": {
+                "target": "192.168.0.1"
+            }
+        },
+        "ethernet_available": {
+            "type": "ping",
+            "scrape_interval": 120,
+            "params": {
+                "target": "8.8.8.8",
+                "retry_count":3
+            }
+        }
+    }
+}

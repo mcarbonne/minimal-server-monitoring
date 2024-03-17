@@ -16,7 +16,7 @@ type Config struct {
 	MachineName string                     `json:"machine_name" default:""`
 	Notifiers   []notifier.Config          `json:"notifiers"`
 	Alert       alert.Config               `json:"alert"`
-	Providers   map[string]provider.Config `json:"providers"`
+	Scrapers    map[string]provider.Config `json:"scrapers"`
 	CachePath   string                     `json:"cache"`
 }
 
