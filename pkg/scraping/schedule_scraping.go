@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/scheduler"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
@@ -15,9 +16,16 @@ func ScheduleScraping(providerCfgList map[string]provider.Config, storageInstanc
 	taskList := []scheduler.Tasker{}
 	taskList = append(taskList, scheduler.MakePeriodicTask(func() { storageInstance.Sync(false) }, time.Second*30))
 
+	instanciatedProviderTypeMap := map[string]int{}
 	// Load and schedule providers
 	for providerName, providerCfg := range providerCfgList {
 		providerInstance := provider.LoadProviderFromConfig(providerCfg)
+		instanciatedProviderTypeMap[providerCfg.Type]++
+		if !providerInstance.MultipleInstanceAllowed() {
+			if instanciatedProviderTypeMap[providerCfg.Type] >= 2 {
+				logging.Fatal("Cannot instantiate provider %v multiple times", providerCfg.Type)
+			}
+		}
 		taskList = append(taskList, scheduler.MakePeriodicTask(func() {
 			result := provider.MakeScrapeResult(providerName)
 			providerInstance.Update(&result, storage.NewSubStorage(storageInstance, providerName+"/"))

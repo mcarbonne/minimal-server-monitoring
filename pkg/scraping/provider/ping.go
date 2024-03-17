@@ -50,3 +50,7 @@ func (pingProvider *ProviderPing) Update(result *ScrapeResult, storage storage.S
 		result.PushFailure("ping_"+target, "unable to ping %v", target)
 	}
 }
+
+func (pingProvider *ProviderPing) MultipleInstanceAllowed() bool {
+	return true
+}

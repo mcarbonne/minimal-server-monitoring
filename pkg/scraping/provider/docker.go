@@ -96,3 +96,7 @@ func (dockerProvider *ProviderDocker) Update(result *ScrapeResult, storage stora
 		result.PushOK("general_inspect_container")
 	}
 }
+
+func (dockerProvider *ProviderDocker) MultipleInstanceAllowed() bool {
+	return false
+}
