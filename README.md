@@ -84,7 +84,7 @@ Example: `metricId: "docker_container_XXXX_state", isHealthy: false, message: "X
 A **Message** metric is the combination of a metricId and a message.
 Example: `metricId: "docker_container_XXXX_updated", message: "container XXXX was updated ...."`
 
-Currently, only two scraper providers are implemented :
+Currently, the following scraper providers are implemented :
 
 #### docker
 - no parameters
@@ -102,6 +102,15 @@ Currently, only two scraper providers are implemented :
 |retry_count|how many times to retry if ping failed|no|3|
 
 - provide one state: is target reachable.
+- multiple instances allowed
+
+#### filesystemusage
+|parameter|description|required|default value|
+|-----|-----------|--------|-------------|
+|mountpoints|list of mount points to check|yes|-|
+|threshold_percent|minimum threshold (percentage) of remaining disk space|no|20|
+
+- provide one state per mountpoint
 - multiple instances allowed
 
 ### AlertCenter

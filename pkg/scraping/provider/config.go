@@ -14,6 +14,8 @@ func LoadProviderFromConfig(cfg Config) Provider {
 		return NewProviderDocker()
 	case "ping":
 		return NewProviderPing(cfg.Params)
+	case "filesystemusage":
+		return NewProviderFileSystemUsage(cfg.Params)
 	default:
 		logging.Fatal("Illegal provider type: %v", cfg.Type)
 		return nil

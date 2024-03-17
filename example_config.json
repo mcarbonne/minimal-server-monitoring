@@ -33,6 +33,13 @@
                 "target": "8.8.8.8",
                 "retry_count":3
             }
+        },
+        "filesystemusage": {
+            "type": "filesystemusage",
+            "params":{
+                "mountpoints":["/"],
+                "threshold_percent": 15
+            }
         }
     }
 }
