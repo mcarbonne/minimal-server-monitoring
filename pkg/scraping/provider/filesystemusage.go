@@ -25,7 +25,7 @@ func NewProviderFileSystemUsage(params map[string]any) Provider {
 	return &cfg
 }
 
-func checkMountPoint(result *ScrapeResult, mountPoint string, threshold uint) {
+func checkMountPoint(result *ScrapeResultWrapper, mountPoint string, threshold uint) {
 	var stat unix.Statfs_t
 
 	err := unix.Statfs(mountPoint, &stat)
@@ -42,7 +42,7 @@ func checkMountPoint(result *ScrapeResult, mountPoint string, threshold uint) {
 	}
 }
 
-func (provider *ProviderFileSystemUsage) Update(result *ScrapeResult, storage storage.Storager) {
+func (provider *ProviderFileSystemUsage) Update(result *ScrapeResultWrapper, storage storage.Storager) {
 	for _, mountpoint := range provider.MountPoints {
 		checkMountPoint(result, mountpoint, provider.SpaceRemainingThreshold)
 	}

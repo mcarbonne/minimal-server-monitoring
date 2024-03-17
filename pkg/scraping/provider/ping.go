@@ -42,7 +42,7 @@ func NewProviderPing(params map[string]any) Provider {
 	return &cfg
 }
 
-func (pingProvider *ProviderPing) Update(result *ScrapeResult, storage storage.Storager) {
+func (pingProvider *ProviderPing) Update(result *ScrapeResultWrapper, storage storage.Storager) {
 	for _, target := range pingProvider.Targets {
 		if pingRetry(target, pingProvider.RetryCount) {
 			result.PushOK("ping_" + target)

@@ -12,7 +12,7 @@ import (
 
 const maxParallelScrapingJobs uint = 8
 
-func ScheduleScraping(ctx context.Context, providerCfgList map[string]provider.Config, storageInstance storage.Storager, resultChan chan<- provider.ScrapeResult) {
+func ScheduleScraping(ctx context.Context, providerCfgList map[string]provider.Config, storageInstance storage.Storager, resultChan chan<- any) {
 	taskList := []scheduler.Tasker{}
 	taskList = append(taskList, scheduler.MakePeriodicTask(func() { storageInstance.Sync(false) }, time.Second*30))
 
@@ -29,9 +29,8 @@ func ScheduleScraping(ctx context.Context, providerCfgList map[string]provider.C
 			}
 		}
 		taskList = append(taskList, scheduler.MakePeriodicTask(func() {
-			result := provider.MakeScrapeResult(providerName)
-			providerInstance.Update(&result, storage.NewSubStorage(storageInstance, providerName+"/"))
-			resultChan <- result
+			resultWrapper := provider.MakeScrapeResultWrapper(providerName, resultChan)
+			providerInstance.Update(&resultWrapper, storage.NewSubStorage(storageInstance, providerName+"/"))
 		}, time.Second*time.Duration(providerCfg.ScrapeInterval)))
 	}
 

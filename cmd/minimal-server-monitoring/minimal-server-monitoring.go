@@ -14,7 +14,6 @@ import (
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
 )
@@ -38,7 +37,7 @@ func main() {
 	storage := storage.NewJSONStorage(cfg.CachePath)
 	storage.Sync(true) // Test if storage can be synced
 
-	scrapeResultChan := make(chan provider.ScrapeResult, 5)
+	scrapeResultChan := make(chan any, 5)
 	notifyChan := make(chan notifier.Message, 5)
 
 	ctx, cancel := context.WithCancel(context.Background())
