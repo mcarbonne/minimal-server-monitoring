@@ -55,3 +55,6 @@ func (pingProvider *ProviderPing) Update(result *ScrapeResult, storage storage.S
 func (pingProvider *ProviderPing) MultipleInstanceAllowed() bool {
 	return true
 }
+
+func (*ProviderPing) Destroy() {
+}

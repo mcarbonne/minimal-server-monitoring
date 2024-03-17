@@ -1,6 +1,7 @@
 package notifier
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
@@ -21,7 +22,7 @@ func LoadNotifierFromConfig(cfg Config) (Notifier, error) {
 	}
 }
 
-func LoadAndRunNotifiers(machineName string, notifierCfgList []Config, messageChan <-chan Message) {
+func LoadAndRunNotifiers(ctx context.Context, machineName string, notifierCfgList []Config, messageChan <-chan Message) {
 	notifierList := make([]Notifier, len(notifierCfgList))
 	var err error
 	for i, notifierCfg := range notifierCfgList {
@@ -30,10 +31,18 @@ func LoadAndRunNotifiers(machineName string, notifierCfgList []Config, messageCh
 			logging.Fatal("Unable to load notifier: %v", err)
 		}
 	}
-	for msg := range messageChan {
-		msg.Title = machineName + " " + msg.Title
-		for _, notifier := range notifierList {
-			notifier.Send(msg)
+
+mainloop:
+	for {
+		select {
+		case <-ctx.Done():
+			logging.Info("Exiting notifier")
+			break mainloop
+		case msg := <-messageChan:
+			msg.Title = machineName + " " + msg.Title
+			for _, notifier := range notifierList {
+				notifier.Send(msg)
+			}
 		}
 	}
 }

@@ -100,3 +100,6 @@ func (dockerProvider *ProviderDocker) Update(result *ScrapeResult, storage stora
 func (dockerProvider *ProviderDocker) MultipleInstanceAllowed() bool {
 	return false
 }
+
+func (*ProviderDocker) Destroy() {
+}

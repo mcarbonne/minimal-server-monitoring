@@ -1,11 +1,13 @@
 package alert
 
 import (
+	"context"
+
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
 )
 
-func AlertCenter(alertCfg Config, scrapResultChan <-chan provider.ScrapeResult, notifyChan chan<- notifier.Message) {
+func AlertCenter(ctx context.Context, alertCfg Config, scrapResultChan <-chan provider.ScrapeResult, notifyChan chan<- notifier.Message) {
 
 	rawMessages := make(chan metricIdWithMsg)
 	filteredMessages := make(chan notifier.Message)

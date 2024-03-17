@@ -1,7 +1,7 @@
 package scraping
 
 import (
-	"log"
+	"context"
 	"time"
 
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
@@ -12,14 +12,16 @@ import (
 
 const maxParallelScrapingJobs uint = 8
 
-func ScheduleScraping(providerCfgList map[string]provider.Config, storageInstance storage.Storager, resultChan chan<- provider.ScrapeResult) {
+func ScheduleScraping(ctx context.Context, providerCfgList map[string]provider.Config, storageInstance storage.Storager, resultChan chan<- provider.ScrapeResult) {
 	taskList := []scheduler.Tasker{}
 	taskList = append(taskList, scheduler.MakePeriodicTask(func() { storageInstance.Sync(false) }, time.Second*30))
 
+	providerList := make([]provider.Provider, 0, len(providerCfgList))
 	instanciatedProviderTypeMap := map[string]int{}
 	// Load and schedule providers
 	for providerName, providerCfg := range providerCfgList {
 		providerInstance := provider.LoadProviderFromConfig(providerCfg)
+		providerList = append(providerList, providerInstance)
 		instanciatedProviderTypeMap[providerCfg.Type]++
 		if !providerInstance.MultipleInstanceAllowed() {
 			if instanciatedProviderTypeMap[providerCfg.Type] >= 2 {
@@ -35,6 +37,11 @@ func ScheduleScraping(providerCfgList map[string]provider.Config, storageInstanc
 
 	scheduler := scheduler.MakeScheduler(taskList)
 
-	log.Printf("Start collecting metrics (%d providers, %d max threads)", len(providerCfgList), maxParallelScrapingJobs)
-	scheduler.ScheduleAsync(maxParallelScrapingJobs)
+	logging.Info("Start collecting metrics (%d providers, %d max threads)", len(providerCfgList), maxParallelScrapingJobs)
+	scheduler.ScheduleAsync(ctx, maxParallelScrapingJobs)
+	logging.Info("Exiting scraping...")
+	for _, providerInstance := range providerList {
+		providerInstance.Destroy()
+	}
+	logging.Info("Done")
 }

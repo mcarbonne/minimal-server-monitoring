@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
+	"time"
 
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/alert"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/config"
@@ -13,6 +16,7 @@ import (
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
 )
 
 func usage() {
@@ -37,22 +41,32 @@ func main() {
 	scrapeResultChan := make(chan provider.ScrapeResult, 5)
 	notifyChan := make(chan notifier.Message, 5)
 
+	ctx, cancel := context.WithCancel(context.Background())
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
 	// alert center
-	go func() {
-		alert.AlertCenter(cfg.Alert, scrapeResultChan, notifyChan)
-	}()
+	alert.AlertCenter(ctx, cfg.Alert, scrapeResultChan, notifyChan)
 
 	// notifier
 	go func() {
-		notifier.LoadAndRunNotifiers(cfg.MachineName, cfg.Notifiers, notifyChan)
+		defer wg.Done()
+		notifier.LoadAndRunNotifiers(ctx, cfg.MachineName, cfg.Notifiers, notifyChan)
 	}()
 
 	// Start metric scraping
 	go func() {
-		scraping.ScheduleScraping(cfg.Scrapers, storage, scrapeResultChan)
+		defer wg.Done()
+		scraping.ScheduleScraping(ctx, cfg.Scrapers, storage, scrapeResultChan)
 	}()
 
 	<-signalChan
 	logging.Info("Exiting...")
 	storage.Sync(false)
+	cancel()
+	logging.Info("Waiting for jobs to finish")
+	if utils.WaitTimeout(&wg, 5*time.Second) {
+		logging.Error("Failed to exit properly")
+	}
+
 }

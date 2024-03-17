@@ -7,4 +7,5 @@ import (
 type Provider interface {
 	Update(result *ScrapeResult, storage storage.Storager)
 	MultipleInstanceAllowed() bool
+	Destroy()
 }

@@ -52,3 +52,6 @@ func (provider *ProviderFileSystemUsage) Update(result *ScrapeResult, storage st
 func (*ProviderFileSystemUsage) MultipleInstanceAllowed() bool {
 	return true
 }
+
+func (*ProviderFileSystemUsage) Destroy() {
+}
