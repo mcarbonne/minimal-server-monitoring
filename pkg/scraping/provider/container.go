@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -44,13 +45,13 @@ func (containerProvider *ProviderContainer) updateStateMetric(resultWrapper *Scr
 }
 
 func (containerProvider *ProviderContainer) updateImageMetric(resultWrapper *ScrapeResultWrapper, storage storage.Storager, ctr types.Container) {
-	imageKey := "image_id/" + ctr.ID
+	imageKey := fmt.Sprintf("container/%v/image_id", ctr.Names)
 	metric := resultWrapper.Metric("container_image_update_"+ctr.ID, containerPrettyName(ctr)+" image update")
 
-	lastKnownImage, exists := storage.Get(imageKey)
+	_, exists := storage.Get(imageKey)
 	changed := storage.Set(imageKey, ctr.ImageID)
 	if changed && exists {
-		metric.PushMessage("container was updated from %v to %v", lastKnownImage, ctr.ImageID)
+		metric.PushMessage("image was updated")
 	}
 }
 

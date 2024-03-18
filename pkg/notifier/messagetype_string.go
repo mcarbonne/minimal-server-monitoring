@@ -11,13 +11,13 @@ func _() {
 	_ = x[Undefined-0]
 	_ = x[Notification-1]
 	_ = x[Failure-2]
-	_ = x[OK-3]
+	_ = x[Recovery-3]
 	_ = x[Aggregate-4]
 }
 
-const _MessageType_name = "UndefinedNotificationFailureOKAggregate"
+const _MessageType_name = "UndefinedNotificationFailureRecoveryAggregate"
 
-var _MessageType_index = [...]uint8{0, 9, 21, 28, 30, 39}
+var _MessageType_index = [...]uint8{0, 9, 21, 28, 36, 45}
 
 func (i MessageType) String() string {
 	if i >= MessageType(len(_MessageType_index)-1) {
