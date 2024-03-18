@@ -20,11 +20,11 @@ type testStruct struct {
 	Str              string            `json:"str"`
 	StrDefault       string            `json:"str_d" default:"default_str"`
 	Slice            []int             `json:"slice_int"`
-	SliceEmpty       []int             `json:"slice_int_empty"`
+	SliceEmpty       []int             `json:"slice_int_empty" default:"[]"`
 	Map              map[string]string `json:"map_str"`
-	MapEmpty         map[string]string `json:"map_str_empty"`
+	MapEmpty         map[string]string `json:"map_str_empty" default:"{}"`
 	Struct           subStruct         `json:"struct"`
-	StructNotPresent subStruct         `json:"struct_to_present"`
+	StructNotPresent subStruct         `json:"struct_to_present" default:"{}"`
 }
 
 func TestMapOnStruct1(t *testing.T) {

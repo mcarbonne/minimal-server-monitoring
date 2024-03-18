@@ -1,11 +1,15 @@
 package alert
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
 )
 
-func AlertCenter(alertCfg Config, scrapResultChan <-chan provider.ScrapeResult, notifyChan chan<- notifier.Message) {
+func AlertCenter(ctx context.Context, alertCfg Config, scrapResultChan <-chan any, notifyChan chan<- notifier.Message) {
 
 	rawMessages := make(chan metricIdWithMsg)
 	filteredMessages := make(chan notifier.Message)
@@ -14,24 +18,26 @@ func AlertCenter(alertCfg Config, scrapResultChan <-chan provider.ScrapeResult, 
 	//Step 1: convert scrape result to messages
 	go func(outputChan chan<- metricIdWithMsg) {
 		for scrapeResult := range scrapResultChan {
-			for metricId, metricState := range scrapeResult.StateMap {
-				if metricStateMachines[metricId] == nil {
-					metricStateMachines[metricId] = MakeMetricStateMachine(metricId, alertCfg.HealthyThreshold, alertCfg.UnhealthyThreshold)
+			switch element := scrapeResult.(type) {
+			case provider.MetricMessage:
+				outputChan <- metricIdWithMsg{
+					metricId: element.MetricID,
+					message: notifier.MakeMessage(notifier.Notification,
+						fmt.Sprintf("%v: %v", element.Name, element.Description)),
 				}
-				optMessage := metricStateMachines[metricId].Update(metricState)
+			case provider.MetricState:
+				if metricStateMachines[element.MetricID] == nil {
+					metricStateMachines[element.MetricID] = MakeMetricStateMachine(alertCfg.HealthyThreshold, alertCfg.UnhealthyThreshold)
+				}
+				optMessage := metricStateMachines[element.MetricID].Update(element)
 
 				if optMessage != nil {
 					outputChan <- metricIdWithMsg{
-						metricId: metricId,
+						metricId: element.MetricID,
 						message:  *optMessage}
 				}
-			}
-
-			for _, msg := range scrapeResult.MessageList {
-				outputChan <- metricIdWithMsg{
-					metricId: msg.MetricID,
-					message:  notifier.MakeMessage(notifier.Notification, msg.Description),
-				}
+			default:
+				logging.Warning("Unsupported element received: %v", element)
 			}
 		}
 	}(rawMessages)

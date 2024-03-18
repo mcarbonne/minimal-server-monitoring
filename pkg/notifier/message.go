@@ -12,7 +12,7 @@ const (
 	Undefined MessageType = iota
 	Notification
 	Failure
-	OK
+	Recovery
 	Aggregate
 )
 

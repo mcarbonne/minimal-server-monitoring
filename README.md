@@ -12,6 +12,8 @@ This tool lets you monitor a typical home server running applications in contain
 - alert when a container is restarting forever
 - alert when a container isn't started
 - alert when a target is unreachable (ping)
+- alert when available disk space is low
+- alert when systemd service is failed
 - notify when a container image is updated (provide an alternative to [watchtower](https://containrrr.dev/watchtower/) if you are running podman with podman-auto-update)
 
 ## Minimal configuration
@@ -23,13 +25,18 @@ docker run -e MACHINENAME=$(hostname) -e SHOUTRRR=XXXXXXX -v .../cache.json:/app
 
 ### Custom config.json
 ```
-docker run -v .../config.json:/app/config.json:ro -v .../cache.json:/app/cache.json -v /var/run/docker.sock:/var/run/docker.sock:ro \
+docker run \
+-v .../config.json:/app/config.json:ro \
+-v .../cache.json:/app/cache.json \
+-v /var/run/docker.sock:/var/run/docker.sock:ro \
+-v /run/systemd:/run/systemd:ro \
 --name minimal-server-monitoring -d ghcr.io/mcarbonne/minimal-server-monitoring:latest
 ```
 
 - `-v .../config.json:/app/config.json:ro`: override default configuration file with your settings. Default configuration file is available [here](docker_config.json). Have a look at [example_config.json](example_config.json) for an exhaustive lists of available parameters.
 - `-v .../cache.json:/app/cache.json`: persist the cache
-- `-v /var/run/docker.sock:/var/run/docker.sock:ro`: give access to the host docker daemon (and allow monitoring of running containers). Use `/run/podman/podman.sock:/var/run/docker.sock:ro` if you are using podman.
+- `-v /var/run/docker.sock:/var/run/docker.sock:ro`: give access to the host docker daemon (required for container provider). Use `/run/podman/podman.sock:/var/run/docker.sock:ro` if you are using podman.
+- `-v /run/systemd:/run/systemd:ro`: give access to the host systemd (required for systemd provider)
 
 ## Internal
 ```mermaid
@@ -39,7 +46,7 @@ flowchart TD
         Sc--run-->S1
         Sc--run-->S2
         Sc--run-->S3
-        S1[Docker]
+        S1[Container]
         S2[Ping]
         S3[...]
         S1-->SC
@@ -79,14 +86,14 @@ On contrary to some other monitoring tools, decisions are taken in scrapers (i.e
 Multiple instances of a given provider may be allowed (depending on provider).
 
 A **State** metric is the combination of a metricId, a state (boolean) and a message.
-Example: `metricId: "docker_container_XXXX_state", isHealthy: false, message: "XXXX isn't running"`
+Example: `metricId: "container_XXXX_state", isHealthy: false, message: "XXXX isn't running"`
 
 A **Message** metric is the combination of a metricId and a message.
-Example: `metricId: "docker_container_XXXX_updated", message: "container XXXX was updated ...."`
+Example: `metricId: "container_XXXX_updated", message: "container XXXX was updated ...."`
 
-Currently, only two scraper providers are implemented :
+Currently, the following scraper providers are implemented :
 
-#### docker
+#### container
 - no parameters
 - only one instance allowed
 - messages (for every running containers):
@@ -98,11 +105,26 @@ Currently, only two scraper providers are implemented :
 #### ping
 |parameter|description|required|default value|
 |-----|-----------|--------|-------------|
-|target|ip address (or hostname) to ping|yes|-|
+|targets|list of ip addresses/hostnames to ping|yes|-|
 |retry_count|how many times to retry if ping failed|no|3|
 
 - provide one state: is target reachable.
 - multiple instances allowed
+
+#### filesystemusage
+|parameter|description|required|default value|
+|-----|-----------|--------|-------------|
+|mountpoints|list of mount points to check|yes|-|
+|threshold_percent|minimum threshold (percentage) of available disk space|no|20|
+
+- provide one state per mountpoint
+- multiple instances allowed
+
+#### systemd
+- no parameters
+- only one instance allowed
+- states (for every services):
+  - service status (for every active service, check if started and running)
 
 ### AlertCenter
 AlertCenter is here to:

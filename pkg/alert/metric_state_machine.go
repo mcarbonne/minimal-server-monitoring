@@ -7,7 +7,6 @@ import (
 )
 
 type MetricStateMachine struct {
-	metricId           string
 	healthyThreshold   uint // how many consecutived pass tests to mark metric as healthy, 0 means metric is healthy on first fail
 	unhealthyThreshold uint // how many consecutive failed tests to mark metric as unhealthy, 0 means metric is unhealthy on first fail
 
@@ -15,9 +14,8 @@ type MetricStateMachine struct {
 	oppositeInARow uint
 }
 
-func MakeMetricStateMachine(metricId string, healthyThreshold, unhealthyThreshold uint) *MetricStateMachine {
+func MakeMetricStateMachine(healthyThreshold, unhealthyThreshold uint) *MetricStateMachine {
 	return &MetricStateMachine{
-		metricId:           metricId,
 		healthyThreshold:   healthyThreshold,
 		unhealthyThreshold: unhealthyThreshold,
 		isHealthy:          true,
@@ -38,12 +36,12 @@ func (msm *MetricStateMachine) Update(metricState provider.MetricState) *notifie
 	if msm.isHealthy {
 		if msm.oppositeInARow >= msm.unhealthyThreshold {
 			msm.isHealthy = false
-			msg = utils.Ptr(notifier.MakeMessage(notifier.Failure, "metric %v failed: %v", msm.metricId, metricState.Description))
+			msg = utils.Ptr(notifier.MakeMessage(notifier.Failure, "%v failed: %v", metricState.Name, metricState.Description))
 		}
 	} else {
 		if msm.oppositeInARow >= msm.healthyThreshold {
 			msm.isHealthy = true
-			msg = utils.Ptr(notifier.MakeMessage(notifier.OK, "metric %v is OK", msm.metricId))
+			msg = utils.Ptr(notifier.MakeMessage(notifier.Recovery, "%v recovered", metricState.Name))
 		}
 
 	}

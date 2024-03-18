@@ -1,17 +1,17 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
 )
 
 type ProviderPing struct {
-	Target     string `json:"target"`
-	RetryCount uint   `json:"retry_count" default:"3"`
+	Targets    []string `json:"targets"`
+	RetryCount uint     `json:"retry_count" default:"3"`
 }
 
 func ping(target string) bool {
@@ -34,23 +34,32 @@ func pingRetry(target string, retryCount uint) bool {
 	return false
 }
 
-func NewProviderPing(params map[string]any) Provider {
+func NewProviderPing(params map[string]any) (Provider, error) {
 	cfg, err := utils.MapOnStruct[ProviderPing](params)
-	if err != nil {
-		logging.Fatal("Unable to load configuration for ping provider: %v", err)
-	}
-	return &cfg
+	return &cfg, err
 }
 
-func (pingProvider *ProviderPing) Update(result *ScrapeResult, storage storage.Storager) {
-	target := pingProvider.Target
-	if pingRetry(target, pingProvider.RetryCount) {
-		result.PushOK("ping_" + target)
-	} else {
-		result.PushFailure("ping_"+target, "unable to ping %v", target)
+func (pingProvider *ProviderPing) GetUpdateTaskList(ctx context.Context, resultWrapper *ScrapeResultWrapper, storage storage.Storager) UpdateTaskList {
+	taskList := UpdateTaskList{}
+
+	for _, target := range pingProvider.Targets {
+		taskList = append(taskList,
+			func() {
+				metric := resultWrapper.Metric("ping_"+target, "ping ["+target+"]")
+				if pingRetry(target, pingProvider.RetryCount) {
+					metric.PushOK()
+				} else {
+					metric.PushFailure("unreachable")
+				}
+			},
+		)
 	}
+	return taskList
 }
 
 func (pingProvider *ProviderPing) MultipleInstanceAllowed() bool {
 	return true
+}
+
+func (*ProviderPing) Destroy() {
 }

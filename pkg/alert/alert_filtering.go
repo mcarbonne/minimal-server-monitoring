@@ -43,7 +43,7 @@ func (mf *metricFilter) forwardToOutputIfAllowed(metricId string, msg notifier.M
 		mf.spamCount++
 	} else if mf.spamCount > 0 {
 		logging.Info("Metric %v: end of spam (%v message lost)", mf.metricId, mf.spamCount)
-		output <- notifier.MakeMessage(notifier.OK, "Notification spam has ended (metricId: %v, lost: %v)", metricId, mf.spamCount)
+		output <- notifier.MakeMessage(notifier.Recovery, "Notification spam has ended (metricId: %v, lost: %v)", metricId, mf.spamCount)
 		mf.spamCount = 0
 	}
 

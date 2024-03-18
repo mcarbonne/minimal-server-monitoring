@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"sync"
 	"time"
 )
@@ -48,7 +49,7 @@ func (s *Scheduler) Schedule() {
 	}
 }
 
-func (s *Scheduler) ScheduleAsync(maxJobInParallel uint) {
+func (s *Scheduler) ScheduleAsync(ctx context.Context, maxJobInParallel uint) {
 
 	const minimalSleep = time.Second * 1 // sleep for at least 1 second (throttling)
 
@@ -61,7 +62,7 @@ func (s *Scheduler) ScheduleAsync(maxJobInParallel uint) {
 
 		}()
 	}
-
+mainloop:
 	for {
 		now := time.Now()
 		iterationWg := sync.WaitGroup{}
@@ -86,7 +87,12 @@ func (s *Scheduler) ScheduleAsync(maxJobInParallel uint) {
 		if nextSchedule < minimalSleep {
 			nextSchedule = minimalSleep
 		}
-		time.Sleep(nextSchedule)
+		select {
+		case <-ctx.Done():
+			close(jobQueue)
+			break mainloop
+		case <-time.After(nextSchedule):
+		}
 
 	}
 }
