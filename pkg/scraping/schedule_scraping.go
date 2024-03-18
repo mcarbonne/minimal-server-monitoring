@@ -20,7 +20,7 @@ func ScheduleScraping(ctx context.Context, providerCfgList map[string]provider.C
 	instanciatedProviderTypeMap := map[string]int{}
 	// Load and schedule providers
 	for providerName, providerCfg := range providerCfgList {
-		providerInstance := provider.LoadProviderFromConfig(providerCfg)
+		providerInstance := provider.LoadProviderFromConfig(ctx, providerCfg)
 		providerList = append(providerList, providerInstance)
 		instanciatedProviderTypeMap[providerCfg.Type]++
 		if !providerInstance.MultipleInstanceAllowed() {
@@ -28,10 +28,13 @@ func ScheduleScraping(ctx context.Context, providerCfgList map[string]provider.C
 				logging.Fatal("Cannot instantiate provider %v multiple times", providerCfg.Type)
 			}
 		}
-		taskList = append(taskList, scheduler.MakePeriodicTask(func() {
-			resultWrapper := provider.MakeScrapeResultWrapper(providerName, resultChan)
-			providerInstance.Update(&resultWrapper, storage.NewSubStorage(storageInstance, providerName+"/"))
-		}, time.Second*time.Duration(providerCfg.ScrapeInterval)))
+		resultWrapper := provider.MakeScrapeResultWrapper(providerName, resultChan)
+
+		updateTaskList := providerInstance.GetUpdateTaskList(ctx, &resultWrapper, storage.NewSubStorage(storageInstance, providerName+"/"))
+
+		for _, updateTask := range updateTaskList {
+			taskList = append(taskList, scheduler.MakePeriodicTask(updateTask, time.Second*time.Duration(providerCfg.ScrapeInterval)))
+		}
 	}
 
 	scheduler := scheduler.MakeScheduler(taskList)

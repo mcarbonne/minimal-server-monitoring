@@ -25,7 +25,7 @@ func AlertCenter(ctx context.Context, alertCfg Config, scrapResultChan <-chan an
 				}
 			case provider.MetricState:
 				if metricStateMachines[element.MetricID] == nil {
-					metricStateMachines[element.MetricID] = MakeMetricStateMachine(element.MetricID, alertCfg.HealthyThreshold, alertCfg.UnhealthyThreshold)
+					metricStateMachines[element.MetricID] = MakeMetricStateMachine(alertCfg.HealthyThreshold, alertCfg.UnhealthyThreshold)
 				}
 				optMessage := metricStateMachines[element.MetricID].Update(element)
 

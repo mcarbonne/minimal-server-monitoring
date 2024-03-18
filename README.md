@@ -39,7 +39,7 @@ flowchart TD
         Sc--run-->S1
         Sc--run-->S2
         Sc--run-->S3
-        S1[Docker]
+        S1[Container]
         S2[Ping]
         S3[...]
         S1-->SC
@@ -79,14 +79,14 @@ On contrary to some other monitoring tools, decisions are taken in scrapers (i.e
 Multiple instances of a given provider may be allowed (depending on provider).
 
 A **State** metric is the combination of a metricId, a state (boolean) and a message.
-Example: `metricId: "docker_container_XXXX_state", isHealthy: false, message: "XXXX isn't running"`
+Example: `metricId: "container_XXXX_state", isHealthy: false, message: "XXXX isn't running"`
 
 A **Message** metric is the combination of a metricId and a message.
-Example: `metricId: "docker_container_XXXX_updated", message: "container XXXX was updated ...."`
+Example: `metricId: "container_XXXX_updated", message: "container XXXX was updated ...."`
 
 Currently, the following scraper providers are implemented :
 
-#### docker
+#### container
 - no parameters
 - only one instance allowed
 - messages (for every running containers):

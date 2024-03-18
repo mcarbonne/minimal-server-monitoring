@@ -10,7 +10,7 @@
    ],
    "scrapers": {
       "docker": {
-         "type": "docker"
+         "type": "container"
       }
    },
    "cache": "/app/cache.json"

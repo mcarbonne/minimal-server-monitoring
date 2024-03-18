@@ -1,6 +1,10 @@
 package provider
 
-import "github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
+import (
+	"context"
+
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
+)
 
 type Config struct {
 	Type           string         `json:"type"`
@@ -8,10 +12,10 @@ type Config struct {
 	Params         map[string]any `json:"params" default:"{}"`           // extra parameters
 }
 
-func LoadProviderFromConfig(cfg Config) Provider {
+func LoadProviderFromConfig(ctx context.Context, cfg Config) Provider {
 	switch cfg.Type {
-	case "docker":
-		return NewProviderDocker()
+	case "container":
+		return NewProviderContainer()
 	case "ping":
 		return NewProviderPing(cfg.Params)
 	case "filesystemusage":

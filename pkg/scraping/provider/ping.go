@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 
@@ -42,14 +43,22 @@ func NewProviderPing(params map[string]any) Provider {
 	return &cfg
 }
 
-func (pingProvider *ProviderPing) Update(result *ScrapeResultWrapper, storage storage.Storager) {
+func (pingProvider *ProviderPing) GetUpdateTaskList(ctx context.Context, resultWrapper *ScrapeResultWrapper, storage storage.Storager) UpdateTaskList {
+	taskList := UpdateTaskList{}
+
 	for _, target := range pingProvider.Targets {
-		if pingRetry(target, pingProvider.RetryCount) {
-			result.PushOK("ping_" + target)
-		} else {
-			result.PushFailure("ping_"+target, "unable to ping %v", target)
-		}
+		taskList = append(taskList,
+			func() {
+				metric := resultWrapper.Metric("ping_"+target, "ping ["+target+"]")
+				if pingRetry(target, pingProvider.RetryCount) {
+					metric.PushOK()
+				} else {
+					metric.PushFailure("unreachable")
+				}
+			},
+		)
 	}
+	return taskList
 }
 
 func (pingProvider *ProviderPing) MultipleInstanceAllowed() bool {

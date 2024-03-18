@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"context"
+
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
@@ -25,26 +27,32 @@ func NewProviderFileSystemUsage(params map[string]any) Provider {
 	return &cfg
 }
 
-func checkMountPoint(result *ScrapeResultWrapper, mountPoint string, threshold uint) {
+func checkMountPoint(resultWrapper *ScrapeResultWrapper, mountPoint string, threshold uint) {
 	var stat unix.Statfs_t
 
 	err := unix.Statfs(mountPoint, &stat)
 
+	metric := resultWrapper.Metric("filesystemusage_"+mountPoint, "mountpoint ["+mountPoint+"]")
+
 	if err != nil {
-		result.PushFailure("filesystemusage_"+mountPoint, "Unable to get remaining space for %v: %v", mountPoint, err)
+		metric.PushFailure("unable to get remaining space for %v: %v", mountPoint, err)
 	} else {
 		remainingSpace := 100 * stat.Bavail / stat.Blocks
 		if remainingSpace < uint64(threshold) {
-			result.PushFailure("filesystemusage_"+mountPoint, "Low space remaining on %v: %v%%", mountPoint, remainingSpace)
+			metric.PushFailure("low space remaining on %v: %v%%", mountPoint, remainingSpace)
 		} else {
-			result.PushOK("filesystemusage_" + mountPoint)
+			metric.PushOK()
 		}
 	}
 }
 
-func (provider *ProviderFileSystemUsage) Update(result *ScrapeResultWrapper, storage storage.Storager) {
-	for _, mountpoint := range provider.MountPoints {
-		checkMountPoint(result, mountpoint, provider.SpaceRemainingThreshold)
+func (provider *ProviderFileSystemUsage) GetUpdateTaskList(ctx context.Context, resultWrapper *ScrapeResultWrapper, storage storage.Storager) UpdateTaskList {
+	return UpdateTaskList{
+		func() {
+			for _, mountpoint := range provider.MountPoints {
+				checkMountPoint(resultWrapper, mountpoint, provider.SpaceRemainingThreshold)
+			}
+		},
 	}
 
 }

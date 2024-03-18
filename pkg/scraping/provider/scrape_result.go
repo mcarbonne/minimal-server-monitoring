@@ -6,18 +6,26 @@ import (
 
 type MetricState struct {
 	MetricID    string
+	Name        string
 	IsHealthy   bool
 	Description string
 }
 
 type MetricMessage struct {
 	MetricID    string
+	Name        string
 	Description string
 }
 
 type ScrapeResultWrapper struct {
 	prefix     string
 	resultChan chan<- any
+}
+
+type MetricWrapper struct {
+	metricID      string
+	name          string
+	resultWrapper *ScrapeResultWrapper
 }
 
 func MakeScrapeResultWrapper(prefix string, resultChan chan<- any) ScrapeResultWrapper {
@@ -27,29 +35,39 @@ func MakeScrapeResultWrapper(prefix string, resultChan chan<- any) ScrapeResultW
 	}
 }
 
+func (wrapper *ScrapeResultWrapper) Metric(metricId, name string) MetricWrapper {
+	return MetricWrapper{
+		metricID:      metricId,
+		name:          name,
+		resultWrapper: wrapper,
+	}
+}
+
 func (wrapper *ScrapeResultWrapper) getFullID(metricId string) string {
 	return wrapper.prefix + "_" + metricId
 }
 
-func (wrapper *ScrapeResultWrapper) PushState(metricId string, isHealthy bool, description string, args ...any) {
+func (wrapper *ScrapeResultWrapper) pushState(metricId, name string, isHealthy bool, description string, args ...any) {
 	wrapper.resultChan <- MetricState{
 		MetricID:    wrapper.getFullID(metricId),
+		Name:        name,
 		IsHealthy:   isHealthy,
 		Description: fmt.Sprintf(description, args...),
 	}
 }
 
-func (wrapper *ScrapeResultWrapper) PushFailure(metricId string, description string, args ...any) {
-	wrapper.PushState(metricId, false, description, args...)
+func (wrapper *MetricWrapper) PushFailure(description string, args ...any) {
+	wrapper.resultWrapper.pushState(wrapper.metricID, wrapper.name, false, description, args...)
 }
 
-func (wrapper *ScrapeResultWrapper) PushOK(metricId string) {
-	wrapper.PushState(metricId, true, "")
+func (wrapper *MetricWrapper) PushOK() {
+	wrapper.resultWrapper.pushState(wrapper.metricID, wrapper.name, true, "")
 }
 
-func (wrapper *ScrapeResultWrapper) PushMessage(metricId, description string, args ...any) {
-	wrapper.resultChan <- MetricMessage{
-		MetricID:    wrapper.getFullID(metricId),
+func (wrapper *MetricWrapper) PushMessage(description string, args ...any) {
+	wrapper.resultWrapper.resultChan <- MetricMessage{
+		MetricID:    wrapper.resultWrapper.getFullID(wrapper.metricID),
+		Name:        wrapper.name,
 		Description: fmt.Sprintf(description, args...),
 	}
 }
