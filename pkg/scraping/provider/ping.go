@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
 )
@@ -35,12 +34,9 @@ func pingRetry(target string, retryCount uint) bool {
 	return false
 }
 
-func NewProviderPing(params map[string]any) Provider {
+func NewProviderPing(params map[string]any) (Provider, error) {
 	cfg, err := utils.MapOnStruct[ProviderPing](params)
-	if err != nil {
-		logging.Fatal("Unable to load configuration for ping provider: %v", err)
-	}
-	return &cfg
+	return &cfg, err
 }
 
 func (pingProvider *ProviderPing) GetUpdateTaskList(ctx context.Context, resultWrapper *ScrapeResultWrapper, storage storage.Storager) UpdateTaskList {

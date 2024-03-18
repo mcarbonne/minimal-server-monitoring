@@ -2,8 +2,7 @@ package provider
 
 import (
 	"context"
-
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
+	"fmt"
 )
 
 type Config struct {
@@ -12,7 +11,7 @@ type Config struct {
 	Params         map[string]any `json:"params" default:"{}"`           // extra parameters
 }
 
-func LoadProviderFromConfig(ctx context.Context, cfg Config) Provider {
+func LoadProviderFromConfig(ctx context.Context, cfg Config) (Provider, error) {
 	switch cfg.Type {
 	case "container":
 		return NewProviderContainer()
@@ -21,7 +20,6 @@ func LoadProviderFromConfig(ctx context.Context, cfg Config) Provider {
 	case "filesystemusage":
 		return NewProviderFileSystemUsage(cfg.Params)
 	default:
-		logging.Fatal("Illegal provider type: %v", cfg.Type)
-		return nil
+		return nil, fmt.Errorf("illegal provider type: %v", cfg.Type)
 	}
 }

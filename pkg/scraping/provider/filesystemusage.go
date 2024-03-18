@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
 	"golang.org/x/sys/unix"
@@ -14,17 +13,9 @@ type ProviderFileSystemUsage struct {
 	SpaceRemainingThreshold uint     `json:"threshold_percent" default:"20"`
 }
 
-func NewProviderFileSystemUsage(params map[string]any) Provider {
+func NewProviderFileSystemUsage(params map[string]any) (Provider, error) {
 	cfg, err := utils.MapOnStruct[ProviderFileSystemUsage](params)
-	if err != nil {
-		logging.Fatal("Unable to load configuration for filesystemusage provider: %v", err)
-	}
-
-	if err != nil {
-		logging.Fatal("Unable to setup systemd provider: %v", err)
-	}
-
-	return &cfg
+	return &cfg, err
 }
 
 func checkMountPoint(resultWrapper *ScrapeResultWrapper, mountPoint string, threshold uint) {

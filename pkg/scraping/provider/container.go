@@ -7,7 +7,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
 )
 
@@ -18,16 +17,16 @@ type ProviderContainer struct {
 	containerState        map[string]string
 }
 
-func NewProviderContainer() Provider {
+func NewProviderContainer() (Provider, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
-		logging.Fatal("Unable to connect to docker %v", err)
+		return nil, err
 	}
 	return &ProviderContainer{
 		client:                cli,
 		containerRestartCount: make(map[string]int),
 		containerState:        make(map[string]string),
-	}
+	}, nil
 }
 
 func containerPrettyName(ctr types.Container) string {

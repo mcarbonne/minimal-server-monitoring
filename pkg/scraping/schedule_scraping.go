@@ -20,7 +20,12 @@ func ScheduleScraping(ctx context.Context, providerCfgList map[string]provider.C
 	instanciatedProviderTypeMap := map[string]int{}
 	// Load and schedule providers
 	for providerName, providerCfg := range providerCfgList {
-		providerInstance := provider.LoadProviderFromConfig(ctx, providerCfg)
+		providerInstance, err := provider.LoadProviderFromConfig(ctx, providerCfg)
+
+		if err != nil {
+			logging.Fatal("Unable to setup provider '%v': %v", providerName, err)
+		}
+
 		providerList = append(providerList, providerInstance)
 		instanciatedProviderTypeMap[providerCfg.Type]++
 		if !providerInstance.MultipleInstanceAllowed() {
