@@ -17,7 +17,10 @@
     },
     "scrapers": {
         "docker": {
-            "type": "docker"
+            "type": "container"
+        },
+        "systemd": {
+            "type": "systemd"
         },
         "gateway": {
             "type": "ping",
@@ -30,7 +33,7 @@
             "type": "ping",
             "scrape_interval": 120,
             "params": {
-                "target": "8.8.8.8",
+                "targets": ["8.8.8.8"],
                 "retry_count":3
             }
         },

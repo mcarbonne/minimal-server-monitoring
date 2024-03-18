@@ -17,6 +17,8 @@ func LoadProviderFromConfig(ctx context.Context, cfg Config) (Provider, error) {
 		return NewProviderContainer()
 	case "ping":
 		return NewProviderPing(cfg.Params)
+	case "systemd":
+		return NewProviderSystemd(ctx, cfg.Params)
 	case "filesystemusage":
 		return NewProviderFileSystemUsage(cfg.Params)
 	default:
