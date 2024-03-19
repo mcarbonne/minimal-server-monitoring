@@ -124,7 +124,7 @@ Currently, the following scraper providers are implemented :
 - no parameters
 - only one instance allowed
 - states (for every services):
-  - service status (for every active service, check if started and running)
+  - service active state (`ActiveState != failed`)
 
 ### AlertCenter
 AlertCenter is here to:

@@ -32,7 +32,7 @@ func (systemdProvider *ProviderSystemd) GetUpdateTaskList(ctx context.Context, r
 
 			for _, unit := range listOfUnits {
 				metric := resultWrapper.Metric("systemd_"+unit.Name, unit.Name+"@systemd")
-				if unit.ActiveState != "active" && unit.ActiveState != "inactive" {
+				if unit.ActiveState == "failed" {
 					metric.PushFailure("%v is %v", unit.Name, unit.ActiveState)
 				} else {
 					metric.PushOK()
