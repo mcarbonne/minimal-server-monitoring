@@ -5,7 +5,7 @@ go 1.22.1
 require (
 	github.com/containrrr/shoutrrr v0.8.0
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/docker/docker v25.0.4+incompatible
+	github.com/docker/docker v25.0.5+incompatible
 	golang.org/x/sys v0.18.0
 	gotest.tools/v3 v3.5.1
 )
