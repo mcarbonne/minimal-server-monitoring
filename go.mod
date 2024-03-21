@@ -5,7 +5,7 @@ go 1.22.1
 require (
 	github.com/containrrr/shoutrrr v0.8.0
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/docker/docker v25.0.5+incompatible
+	github.com/docker/docker v26.0.0+incompatible
 	golang.org/x/sys v0.18.0
 	gotest.tools/v3 v3.5.1
 )
@@ -25,6 +25,7 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
