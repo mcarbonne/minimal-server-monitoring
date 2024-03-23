@@ -24,14 +24,14 @@
         },
         "gateway": {
             "type": "ping",
-            "scrape_interval": 1,
+            "scrape_interval": "1s",
             "params": {
                 "target": "192.168.0.1"
             }
         },
         "ethernet_available": {
             "type": "ping",
-            "scrape_interval": 120,
+            "scrape_interval": "2m",
             "params": {
                 "targets": ["8.8.8.8"],
                 "retry_count":3

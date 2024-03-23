@@ -38,7 +38,7 @@ func ScheduleScraping(ctx context.Context, providerCfgList map[string]provider.C
 		updateTaskList := providerInstance.GetUpdateTaskList(ctx, &resultWrapper, storage.NewSubStorage(storageInstance, providerName+"/"))
 
 		for _, updateTask := range updateTaskList {
-			taskList = append(taskList, scheduler.MakePeriodicTask(updateTask, time.Second*time.Duration(providerCfg.ScrapeInterval)))
+			taskList = append(taskList, scheduler.MakePeriodicTask(updateTask, providerCfg.ScrapeInterval))
 		}
 	}
 
