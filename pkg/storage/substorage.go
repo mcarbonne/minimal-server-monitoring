@@ -1,14 +1,22 @@
 package storage
 
+import (
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+)
+
 type SubStorage struct {
 	underlyingStorage Storager
 	prefix            string
 }
 
 func NewSubStorage(underlyingStorage Storager, prefix string) Storager {
+	if !utils.IsNameValid(prefix) {
+		logging.Fatal("Illegal prefix: %v", prefix)
+	}
 	return &SubStorage{
 		underlyingStorage: underlyingStorage,
-		prefix:            prefix,
+		prefix:            prefix + "/",
 	}
 }
 

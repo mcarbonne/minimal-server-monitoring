@@ -9,8 +9,8 @@ FROM alpine:3.19.1 as runtime
 
 RUN apk add libc6-compat
 COPY --from=buildstage --chmod=755 /src/minimal-server-monitoring /app/.
-COPY docker_config.json /app/config.json
+COPY docker_config.yml /app/config.yml
 
 WORKDIR /app
 
-CMD ["/app/minimal-server-monitoring", "config.json"]
+CMD ["/app/minimal-server-monitoring", "config.yml"]

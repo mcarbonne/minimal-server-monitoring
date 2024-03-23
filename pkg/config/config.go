@@ -1,20 +1,20 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
 	"strings"
 
+	"github.com/goccy/go-yaml"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/alert"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
 )
 
 type Config struct {
 	MachineName string                     `json:"machine_name" default:""`
-	Notifiers   []notifier.Config          `json:"notifiers"`
+	Notifiers   map[string]notifier.Config `json:"notifiers"`
 	Alert       alert.Config               `json:"alert" default:"{}"`
 	Scrapers    map[string]provider.Config `json:"scrapers"`
 	CachePath   string                     `json:"cache"`
@@ -35,17 +35,17 @@ func LoadConfiguration(configPath string) Config {
 		logging.Fatal(err.Error())
 	}
 
-	var rawJson map[string]interface{}
+	var rawYaml map[string]interface{}
 
 	configFile := os.Expand(string(configFileBytes), strictGetEnv)
 
-	jsonParser := json.NewDecoder(strings.NewReader(configFile))
-	err = jsonParser.Decode(&rawJson)
+	yamlParser := yaml.NewDecoder(strings.NewReader(configFile))
+	err = yamlParser.Decode(&rawYaml)
 	if err != nil {
 		logging.Fatal(err.Error())
 	}
 
-	config, err := utils.MapOnStruct[Config](rawJson)
+	config, err := configmapper.MapOnStruct[Config](rawYaml)
 	if err != nil {
 		logging.Fatal("Error loading config: %v", err)
 	}
