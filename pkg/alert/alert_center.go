@@ -11,8 +11,8 @@ import (
 
 func AlertCenter(ctx context.Context, alertCfg Config, scrapResultChan <-chan any, notifyChan chan<- notifier.Message) {
 
-	rawMessages := make(chan metricIdWithMsg)
-	filteredMessages := make(chan notifier.Message)
+	rawNotifications := make(chan metricIdWithMsg)
+	filteredNotifications := make(chan notifier.Message)
 	metricStateMachines := map[string]*MetricStateMachine{}
 
 	//Step 1: convert scrape result to messages
@@ -40,15 +40,15 @@ func AlertCenter(ctx context.Context, alertCfg Config, scrapResultChan <-chan an
 				logging.Warning("Unsupported element received: %v", element)
 			}
 		}
-	}(rawMessages)
+	}(rawNotifications)
 
 	//Step 2: filter messages
 	go func() {
-		MakeAndRunAlertFilters(rawMessages, filteredMessages)
+		MakeAndRunAlertFilters(rawNotifications, filteredNotifications)
 	}()
 
 	//Step 3: group messages
 	go func() {
-		MakeAndRunAlertGrouping(filteredMessages, notifyChan)
+		MakeAndRunAlertGrouping(filteredNotifications, notifyChan)
 	}()
 }
