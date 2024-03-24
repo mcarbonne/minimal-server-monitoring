@@ -5,7 +5,7 @@ import (
 
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
 )
 
 type ProviderSystemd struct {
@@ -13,7 +13,7 @@ type ProviderSystemd struct {
 }
 
 func NewProviderSystemd(ctx context.Context, params map[string]any) (Provider, error) {
-	cfg, err := utils.MapOnStruct[ProviderSystemd](params)
+	cfg, err := configmapper.MapOnStruct[ProviderSystemd](params)
 	if err == nil {
 		cfg.systemdConn, err = dbus.NewSystemdConnectionContext(ctx)
 	}

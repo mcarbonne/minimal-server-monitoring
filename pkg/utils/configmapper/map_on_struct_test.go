@@ -1,11 +1,12 @@
-package utils_test
+package configmapper_test
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/goccy/go-yaml"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
 	"gotest.tools/v3/assert"
 )
 
@@ -48,30 +49,7 @@ type testStruct struct {
 	DurationDefault  time.Duration     `json:"duration_d" default:"6s"`
 }
 
-func TestMapOnStruct1(t *testing.T) {
-	var rawJson map[string]any
-	myJsonString := `{"int":-5,
-	"int8":-6,
-	"int16":-7,
-	"int32":-8,
-	"int64":-9,
-	"uint":7,
-	"uint8":8,
-	"uint16":9,
-	"uint32":10,
-	"uint64":11,
-	"str":"str",
-	"slice_int":[1,2,3],
-	"map_str": {"a":"abc", "b":"def"},
-	"struct": {"int":5},
-	"duration":"5s"
-	}`
-	json.Unmarshal([]byte(myJsonString), &rawJson)
-	data, err := utils.MapOnStruct[testStruct](rawJson)
-	if err != nil {
-		t.Fatal(err)
-	}
-
+func check(t *testing.T, data *testStruct) {
 	assert.Equal(t, data.Int, -5)
 	assert.Equal(t, data.IntDefault, -3)
 	assert.Equal(t, data.Int8, int8(-6))
@@ -104,4 +82,61 @@ func TestMapOnStruct1(t *testing.T) {
 
 	assert.Equal(t, data.Duration, time.Second*5)
 	assert.Equal(t, data.DurationDefault, time.Second*6)
+}
+
+func TestMapJsonOnStruct(t *testing.T) {
+	var rawJson map[string]any
+	myJsonString := `{"int":-5,
+	"int8":-6,
+	"int16":-7,
+	"int32":-8,
+	"int64":-9,
+	"uint":7,
+	"uint8":8,
+	"uint16":9,
+	"uint32":10,
+	"uint64":11,
+	"str":"str",
+	"slice_int":[1,2,3],
+	"map_str": {"a":"abc", "b":"def"},
+	"struct": {"int":5},
+	"duration":"5s"
+	}`
+	json.Unmarshal([]byte(myJsonString), &rawJson)
+	data, err := configmapper.MapOnStruct[testStruct](rawJson)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check(t, &data)
+}
+func TestMapYamlOnStruct(t *testing.T) {
+	var rawYaml map[string]any
+	myYamlString := `int: -5
+int8: -6
+int16: -7
+int32: -8
+int64: -9
+uint: 7
+uint8: 8
+uint16: 9
+uint32: 10
+uint64: 11
+str: str
+slice_int:
+  - 1
+  - 2
+  - 3
+map_str:
+  a: abc
+  b: def
+struct:
+  int: 5
+duration: 5s
+	}`
+	yaml.Unmarshal([]byte(myYamlString), &rawYaml)
+	data, err := configmapper.MapOnStruct[testStruct](rawYaml)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check(t, &data)
 }

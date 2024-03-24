@@ -1,21 +1,23 @@
-package utils
+package configmapper
 
 import (
 	"fmt"
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
 )
 
 func getAs[Output any](input any) (Output, error) {
 	value, ok := input.(Output)
 	if !ok {
-		return Dummy[Output](), fmt.Errorf("was expecting type %v, got %v (%v)", reflect.TypeFor[Output](), reflect.TypeOf(input), input)
+		return utils.Dummy[Output](), fmt.Errorf("was expecting type %v, got %v (%v)", reflect.TypeFor[Output](), reflect.TypeOf(input), input)
 	}
 	return value, nil
 }
 
-func getDefaultValueInt(valueAsString string, type_ reflect.Type) (reflect.Value, error) {
+func stringToInt(type_ reflect.Type, valueAsString string) (reflect.Value, error) {
 	defaultValue := reflect.New(type_).Elem()
 	intVal, err := strconv.ParseInt(valueAsString, 10, 64)
 	if err != nil {
@@ -26,7 +28,7 @@ func getDefaultValueInt(valueAsString string, type_ reflect.Type) (reflect.Value
 	return defaultValue, nil
 }
 
-func getDefaultValueUint(valueAsString string, type_ reflect.Type) (reflect.Value, error) {
+func stringToUint(type_ reflect.Type, valueAsString string) (reflect.Value, error) {
 	defaultValue := reflect.New(type_).Elem()
 	uintVal, err := strconv.ParseUint(valueAsString, 10, 64)
 	if err != nil {
@@ -73,9 +75,9 @@ func getDefaultValue(field reflect.StructField) (reflect.Value, error) {
 				return reflect.Value{}, fmt.Errorf("unsupported default value for map: %v", tag)
 			}
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			return getDefaultValueInt(tag, field.Type)
+			return stringToInt(field.Type, tag)
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			return getDefaultValueUint(tag, field.Type)
+			return stringToUint(field.Type, tag)
 		case reflect.String:
 			return reflect.ValueOf(tag), nil
 		default:
@@ -86,16 +88,16 @@ func getDefaultValue(field reflect.StructField) (reflect.Value, error) {
 	return reflect.Value{}, nil
 }
 
-func mapOnSlice(type_ reflect.Type, rawJson any, level string) (reflect.Value, error) {
-	json, ok := rawJson.([]any)
+func mapOnSlice(type_ reflect.Type, raw any, level string) (reflect.Value, error) {
+	asSlice, ok := raw.([]any)
 	if !ok {
-		return reflect.Value{}, fmt.Errorf("[%v] json does not match slice", level)
+		return reflect.Value{}, fmt.Errorf("[%v] does not match slice", level)
 	}
 
 	elemType := type_.Elem()
 	slice := reflect.MakeSlice(type_, 0, 0)
 
-	for i, elem := range json {
+	for i, elem := range asSlice {
 		value, err := mapOnAny(elemType, elem, fmt.Sprintf("%v[%v]", level, i))
 		if err != nil {
 			return reflect.Value{}, err
@@ -105,10 +107,10 @@ func mapOnSlice(type_ reflect.Type, rawJson any, level string) (reflect.Value, e
 	return slice, nil
 }
 
-func mapOnStruct(type_ reflect.Type, rawJson any, level string) (reflect.Value, error) {
-	json, ok := rawJson.(map[string]any)
+func mapOnStruct(type_ reflect.Type, raw any, level string) (reflect.Value, error) {
+	asMap, ok := raw.(map[string]any)
 	if !ok {
-		return reflect.Value{}, fmt.Errorf("[%v] json does not match struct", level)
+		return reflect.Value{}, fmt.Errorf("[%v] does not match struct", level)
 	}
 
 	if type_.Kind() != reflect.Struct {
@@ -120,7 +122,7 @@ func mapOnStruct(type_ reflect.Type, rawJson any, level string) (reflect.Value, 
 	for i := range type_.NumField() {
 		field := type_.Field(i)
 		if tag, ok := field.Tag.Lookup("json"); ok {
-			jsonValue, ok := json[tag]
+			rawValue, ok := asMap[tag]
 			if !ok {
 				defaultValue, err := getDefaultValue(field)
 				if err != nil {
@@ -132,7 +134,7 @@ func mapOnStruct(type_ reflect.Type, rawJson any, level string) (reflect.Value, 
 					target.Field(i).Set(defaultValue)
 				}
 			} else {
-				value, err := mapOnAny(field.Type, jsonValue, level+"/"+tag)
+				value, err := mapOnAny(field.Type, rawValue, level+"/"+tag)
 				if err != nil {
 					return reflect.Value{}, err
 				} else {
@@ -145,10 +147,10 @@ func mapOnStruct(type_ reflect.Type, rawJson any, level string) (reflect.Value, 
 	return target, nil
 }
 
-func mapOnMap(type_ reflect.Type, rawJson any, level string) (reflect.Value, error) {
-	json, ok := rawJson.(map[string]any)
+func mapOnMap(type_ reflect.Type, raw any, level string) (reflect.Value, error) {
+	asMap, ok := raw.(map[string]any)
 	if !ok {
-		return reflect.Value{}, fmt.Errorf("[%v] json does not match map", level)
+		return reflect.Value{}, fmt.Errorf("[%v] does not match map", level)
 	}
 
 	if type_.Kind() != reflect.Map {
@@ -162,7 +164,7 @@ func mapOnMap(type_ reflect.Type, rawJson any, level string) (reflect.Value, err
 		return reflect.Value{}, fmt.Errorf("[%v] only string is allowed for key (%v given)", level, keyType)
 	}
 	target := reflect.MakeMapWithSize(type_, 0)
-	for k, v := range json {
+	for k, v := range asMap {
 		value, err := mapOnAny(elemType, v, level+"/"+k)
 		if err != nil {
 			return reflect.Value{}, err
@@ -172,29 +174,47 @@ func mapOnMap(type_ reflect.Type, rawJson any, level string) (reflect.Value, err
 	return target, nil
 }
 
-func mapOnInt(type_ reflect.Type, rawJson any) (reflect.Value, error) {
+func mapOnInt(type_ reflect.Type, raw any) (reflect.Value, error) {
 	value := reflect.New(type_).Elem()
-	value.SetInt(int64(rawJson.(float64)))
+	switch intVal := raw.(type) {
+	case int64:
+		value.SetInt(int64(intVal))
+	case uint64:
+		value.SetInt(int64(intVal))
+	case float64:
+		value.SetInt(int64(intVal))
+	default:
+		return reflect.Value{}, fmt.Errorf("unsupported type for int: %T", intVal)
+	}
+
 	return value, nil
 }
 
-func mapOnUint(type_ reflect.Type, rawJson any) (reflect.Value, error) {
+func mapOnUint(type_ reflect.Type, raw any) (reflect.Value, error) {
 	value := reflect.New(type_).Elem()
-	value.SetUint(uint64(rawJson.(float64)))
+
+	switch intVal := raw.(type) {
+	case uint64:
+		value.SetUint(uint64(intVal))
+	case float64:
+		value.SetUint(uint64(intVal))
+	default:
+		return reflect.Value{}, fmt.Errorf("unsupported type for uint: %T", intVal)
+	}
 	return value, nil
 }
 
-func mapOnString(rawJson any) (reflect.Value, error) {
-	value, err := getAs[string](rawJson)
+func mapOnString(raw any) (reflect.Value, error) {
+	value, err := getAs[string](raw)
 	if err != nil {
 		return reflect.Value{}, err
 	}
 	return reflect.ValueOf(value), nil
 }
 
-func mapOnAny(type_ reflect.Type, rawJson any, level string) (reflect.Value, error) {
+func mapOnAny(type_ reflect.Type, raw any, level string) (reflect.Value, error) {
 	if type_ == reflect.TypeOf(time.Second) {
-		durationAsString, err := getAs[string](rawJson)
+		durationAsString, err := getAs[string](raw)
 		if err != nil {
 			return reflect.Value{}, fmt.Errorf("[%v] unable to parse time.Duration: %v", level, err)
 		}
@@ -208,34 +228,34 @@ func mapOnAny(type_ reflect.Type, rawJson any, level string) (reflect.Value, err
 
 	switch kind := type_.Kind(); kind {
 	case reflect.String:
-		return mapOnString(rawJson)
+		return mapOnString(raw)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return mapOnUint(type_, rawJson)
+		return mapOnUint(type_, raw)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return mapOnInt(type_, rawJson)
+		return mapOnInt(type_, raw)
 	case reflect.Struct:
-		return mapOnStruct(type_, rawJson, level)
+		return mapOnStruct(type_, raw, level)
 	case reflect.Map:
-		return mapOnMap(type_, rawJson, level)
+		return mapOnMap(type_, raw, level)
 	case reflect.Slice:
-		return mapOnSlice(type_, rawJson, level)
+		return mapOnSlice(type_, raw, level)
 	case reflect.Interface:
-		return reflect.ValueOf(rawJson), nil
+		return reflect.ValueOf(raw), nil
 	default:
 		return reflect.Value{}, fmt.Errorf("[%v] mapOnAny: unsupported type %v", level, kind)
 	}
 }
 
-func MapOnStruct[T any](rawJson map[string]any) (T, error) {
+func MapOnStruct[T any](raw map[string]any) (T, error) {
 	if kind := reflect.TypeFor[T]().Kind(); kind != reflect.Struct {
 		var output T
 		return output, fmt.Errorf("require a struct type, %v provided", kind)
 	}
 
-	s, err := mapOnStruct(reflect.TypeFor[T](), rawJson, "")
+	s, err := mapOnStruct(reflect.TypeFor[T](), raw, "")
 
 	if err != nil {
-		return Dummy[T](), err
+		return utils.Dummy[T](), err
 	} else {
 		return s.Interface().(T), nil
 	}

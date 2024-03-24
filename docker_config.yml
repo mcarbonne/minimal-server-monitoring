@@ -1,0 +1,10 @@
+machine_name: "$MACHINENAME"
+notifiers:
+  shoutrrr_notifier:
+    type: shoutrrr
+    params:
+      url: $SHOUTRRR
+scrapers:
+  docker:
+    type: container
+cache: /app/cache.json

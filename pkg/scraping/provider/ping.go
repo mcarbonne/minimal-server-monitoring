@@ -6,7 +6,7 @@ import (
 	"os/exec"
 
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
 )
 
 type ProviderPing struct {
@@ -35,7 +35,7 @@ func pingRetry(target string, retryCount uint) bool {
 }
 
 func NewProviderPing(params map[string]any) (Provider, error) {
-	cfg, err := utils.MapOnStruct[ProviderPing](params)
+	cfg, err := configmapper.MapOnStruct[ProviderPing](params)
 	return &cfg, err
 }
 

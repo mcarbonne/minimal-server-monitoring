@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
 	"golang.org/x/sys/unix"
 )
 
@@ -14,7 +14,7 @@ type ProviderFileSystemUsage struct {
 }
 
 func NewProviderFileSystemUsage(params map[string]any) (Provider, error) {
-	cfg, err := utils.MapOnStruct[ProviderFileSystemUsage](params)
+	cfg, err := configmapper.MapOnStruct[ProviderFileSystemUsage](params)
 	return &cfg, err
 }
 
