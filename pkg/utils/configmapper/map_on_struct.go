@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
@@ -54,6 +55,17 @@ func getDefaultValue(field reflect.StructField) (reflect.Value, error) {
 		case reflect.Slice, reflect.Array:
 			if tag == "[]" {
 				return reflect.MakeSlice(field.Type, 0, 0), nil
+			} else if strings.HasPrefix(tag, "[") && strings.HasSuffix(tag, "]") {
+				out := reflect.MakeSlice(field.Type, 0, 0)
+				elements := strings.Split(tag[1:len(tag)-1], ",")
+				for _, element := range elements {
+					value, err := mapOnAny(field.Type.Elem(), strings.TrimSpace(element), "")
+					if err != nil {
+						return reflect.Value{}, err
+					}
+					out = reflect.Append(out, value)
+				}
+				return out, nil
 			} else {
 				return reflect.Value{}, fmt.Errorf("unsupported default value for array: %v", tag)
 			}
@@ -183,6 +195,8 @@ func mapOnInt(type_ reflect.Type, raw any) (reflect.Value, error) {
 		value.SetInt(int64(intVal))
 	case float64:
 		value.SetInt(int64(intVal))
+	case string:
+		return stringToInt(type_, intVal)
 	default:
 		return reflect.Value{}, fmt.Errorf("unsupported type for int: %T", intVal)
 	}
@@ -198,6 +212,8 @@ func mapOnUint(type_ reflect.Type, raw any) (reflect.Value, error) {
 		value.SetUint(uint64(intVal))
 	case float64:
 		value.SetUint(uint64(intVal))
+	case string:
+		return stringToUint(type_, intVal)
 	default:
 		return reflect.Value{}, fmt.Errorf("unsupported type for uint: %T", intVal)
 	}

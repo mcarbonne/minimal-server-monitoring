@@ -5,6 +5,12 @@ notifiers:
     params:
       url: $SHOUTRRR
 scrapers:
+  services:
+    type: systemd
   docker:
     type: container
+  fs:
+    type: filesystemusage
+    params:
+      mountprefix: "/host"
 cache: /app/cache.json
