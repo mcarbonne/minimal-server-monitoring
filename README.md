@@ -28,13 +28,23 @@ Pre-built images are available on github packages:
 - `ghcr.io/mcarbonne/minimal-server-monitoring:x.x`
 - `ghcr.io/mcarbonne/minimal-server-monitoring:x`
 
-For automatic updates ([watchtower](https://github.com/containrrr/watchtower), [podman-auto-update](https://docs.podman.io/en/latest/markdown/podman-auto-update.1.html)...), using the lastest major tag available (`ghcr.io/mcarbonne/minimal-server-monitoring:1`) is recommanded to avoid breaking changes.
+For automatic updates ([watchtower](https://github.com/containrrr/watchtower), [podman-auto-update](https://docs.podman.io/en/latest/markdown/podman-auto-update.1.html)...), using the lastest major tag available (`ghcr.io/mcarbonne/minimal-server-monitoring:2`) is recommanded to avoid breaking changes.
+
+## Migrations
+### 1.x to 2.x
+- `config.json` is now  `config.yml`
+- `scrape_interval` (for scrapers) is now a string with unit. Before, it was an integer (seconds). Example: `scrape_interval: 120` is now `scrape_interval: 120s` (or  even `scrape_interval: 2m`).
+- `filesystemusage` provider has been reworked to allow automatic mountpoints detection. See [here](#filesystemusage) for details.
 
 ## Minimal configuration
-### Bare minimum (container monitoring only, and alerts with shoutrrr)
+### Default config.yml: container, services and available disk space monitoring, with shoutrrr alerts
 ```
-docker run -e MACHINENAME=$(hostname) -e SHOUTRRR=XXXXXXX -v .../cache.json:/app/cache.json -v /var/run/docker.sock:/var/run/docker.sock:ro \
---name minimal-server-monitoring -d ghcr.io/mcarbonne/minimal-server-monitoring:1
+docker run -e MACHINENAME=$(hostname) -e SHOUTRRR=XXXXXXX \
+-v .../cache.json:/app/cache.json \
+-v /var/run/docker.sock:/var/run/docker.sock:ro \
+-v /run/systemd:/run/systemd:ro \
+-v /:/host:ro \
+--name minimal-server-monitoring -d ghcr.io/mcarbonne/minimal-server-monitoring:2
 ```
 
 ### Custom config.yml
@@ -44,13 +54,15 @@ docker run \
 -v .../cache.json:/app/cache.json \
 -v /var/run/docker.sock:/var/run/docker.sock:ro \
 -v /run/systemd:/run/systemd:ro \
---name minimal-server-monitoring -d ghcr.io/mcarbonne/minimal-server-monitoring:1
+-v /:/host:ro \
+--name minimal-server-monitoring -d ghcr.io/mcarbonne/minimal-server-monitoring:2
 ```
 
 - `-v .../config.yml:/app/config.yml:ro`: override default configuration file with your settings. Default configuration file is available [here](docker_config.yml). Have a look at [example_config.yml](example_config.yml) for an exhaustive lists of available parameters.
 - `-v .../cache.json:/app/cache.json`: persist the cache
 - `-v /var/run/docker.sock:/var/run/docker.sock:ro`: give access to the host docker daemon (required for container provider). Use `/run/podman/podman.sock:/var/run/docker.sock:ro` if you are using podman.
 - `-v /run/systemd:/run/systemd:ro`: give access to the host systemd (required for systemd provider)
+- `-v /:/host:ro`: required for `filesystemusage` to discover and monitor all mountpoints. **Target in container must match `mountprefix` parameter** (see [here](#filesystemusage)).
 
 ## config.yml
 |key|type|required|default value|
@@ -103,7 +115,10 @@ docker run \
 
 |parameter|description|required|default value|
 |-----|-----------|--------|-------------|
-|mountpoints|list of mount points to check|yes|-|
+|mountprefix|mountpoint prefix, when running inside a container|no|"" (empty string)|
+|fstypes|list of file system types to consider|no|[ext4, btrfs]|
+|mountpoint_blacklist|list of mountpoints to ignore|no|[]|
+|mountpoint_whitelist|list of mountpoints to monitor. **When set, `fstypes` and `mountpoint_blacklist` are ignored and autodiscovery is skipped**|no|[]|
 |threshold_percent|minimum threshold (percentage) of available disk space|no|20|
 
 #### ping

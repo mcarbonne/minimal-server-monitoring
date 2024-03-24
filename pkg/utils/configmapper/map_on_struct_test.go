@@ -41,6 +41,7 @@ type testStruct struct {
 	StrDefault       string            `json:"str_d" default:"default_str"`
 	Slice            []int             `json:"slice_int"`
 	SliceEmpty       []int             `json:"slice_int_empty" default:"[]"`
+	SliceDefault     []int             `json:"slice_int_default" default:"[1,2,43]"`
 	Map              map[string]string `json:"map_str"`
 	MapEmpty         map[string]string `json:"map_str_empty" default:"{}"`
 	Struct           subStruct         `json:"struct"`
@@ -76,6 +77,7 @@ func check(t *testing.T, data *testStruct) {
 	assert.Equal(t, data.StrDefault, "default_str")
 	assert.DeepEqual(t, data.Slice, []int{1, 2, 3})
 	assert.DeepEqual(t, data.SliceEmpty, []int{})
+	assert.DeepEqual(t, data.SliceDefault, []int{1, 2, 43})
 	assert.DeepEqual(t, data.Map, map[string]string{"a": "abc", "b": "def"})
 	assert.DeepEqual(t, data.MapEmpty, map[string]string{})
 	assert.DeepEqual(t, data.Struct, subStruct{Int: 5})

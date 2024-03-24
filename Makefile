@@ -23,4 +23,4 @@ local-run:
 
 docker-run:
 	docker build -t $(APP_NAME) .
-	docker run -e SHOUTRRR=$(SHOUTRRR) -e MACHINENAME=$(shell hostname) -it -v /var/run/docker.sock:/var/run/docker.sock:ro -v /run/systemd:/run/systemd:ro $(APP_NAME)
+	docker run -e SHOUTRRR=$(SHOUTRRR) -e MACHINENAME=$(shell hostname) -it -v /var/run/docker.sock:/var/run/docker.sock:ro -v /run/systemd:/run/systemd:ro -v /:/host:ro $(APP_NAME)
