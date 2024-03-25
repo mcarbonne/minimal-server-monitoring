@@ -3,12 +3,13 @@ package provider
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 type Config struct {
 	Type           string         `json:"type"`
-	ScrapeInterval uint           `json:"scrape_interval" default:"120"` // scrape interval in seconds
-	Params         map[string]any `json:"params" default:"{}"`           // extra parameters
+	ScrapeInterval time.Duration  `json:"scrape_interval" default:"120s"` // scrape interval
+	Params         map[string]any `json:"params" default:"{}"`            // extra parameters
 }
 
 func LoadProviderFromConfig(ctx context.Context, cfg Config) (Provider, error) {

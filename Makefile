@@ -19,8 +19,8 @@ generate:
 	go generate ./...
 
 local-run:
-	go run cmd/$(APP_NAME)/$(APP_NAME).go config.json
+	go run -race cmd/$(APP_NAME)/$(APP_NAME).go config.yml
 
 docker-run:
 	docker build -t $(APP_NAME) .
-	docker run -e SHOUTRRR=$(SHOUTRRR) -e MACHINENAME=$(shell hostname) -it -v /var/run/docker.sock:/var/run/docker.sock:ro -v /run/systemd:/run/systemd:ro $(APP_NAME)
+	docker run -e SHOUTRRR=$(SHOUTRRR) -e MACHINENAME=$(shell hostname) -it -v /var/run/docker.sock:/var/run/docker.sock:ro -v /run/systemd:/run/systemd:ro -v /:/host:ro $(APP_NAME)

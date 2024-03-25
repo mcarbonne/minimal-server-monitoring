@@ -1,0 +1,16 @@
+machine_name: "$MACHINENAME"
+notifiers:
+  shoutrrr_notifier:
+    type: shoutrrr
+    params:
+      url: $SHOUTRRR
+scrapers:
+  services:
+    type: systemd
+  docker:
+    type: container
+  fs:
+    type: filesystemusage
+    params:
+      mountprefix: "/host"
+cache: /app/cache.json

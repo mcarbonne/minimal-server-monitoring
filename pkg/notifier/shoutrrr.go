@@ -4,7 +4,7 @@ import (
 	"github.com/containrrr/shoutrrr"
 	"github.com/containrrr/shoutrrr/pkg/router"
 	"github.com/containrrr/shoutrrr/pkg/types"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
 )
 
 type Shoutrrr struct {
@@ -13,7 +13,7 @@ type Shoutrrr struct {
 }
 
 func NewShoutrrr(params params) (Notifier, error) {
-	notifier, err := utils.MapOnStruct[Shoutrrr](params)
+	notifier, err := configmapper.MapOnStruct[Shoutrrr](params)
 	if err != nil {
 		return nil, err
 	}

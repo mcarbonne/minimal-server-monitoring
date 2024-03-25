@@ -26,7 +26,7 @@ func makeStartupMessage(cfg *config.Config) notifier.Message {
 	startupMsg := fmt.Sprintf("Monitoring started:\n - %v notifier(s)", len(cfg.Notifiers))
 	startupMsg += fmt.Sprintf("\n - %v scraper(s):", len(cfg.Scrapers))
 	for scraperName, scraperCfg := range cfg.Scrapers {
-		startupMsg += fmt.Sprintf("\n  * %v (%v) every %v seconds", scraperName, scraperCfg.Type, scraperCfg.ScrapeInterval)
+		startupMsg += fmt.Sprintf("\n  * %v (%v) every %v", scraperName, scraperCfg.Type, scraperCfg.ScrapeInterval)
 	}
 	return notifier.MakeMessage(notifier.Notification, startupMsg)
 }
