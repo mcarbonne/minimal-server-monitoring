@@ -6,7 +6,7 @@ require (
 	github.com/containrrr/shoutrrr v0.8.0
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v27.0.3+incompatible
-	github.com/goccy/go-yaml v1.11.3
+	github.com/goccy/go-yaml v1.12.0
 	github.com/moby/sys/mountinfo v0.7.1
 	golang.org/x/sys v0.22.0
 	gotest.tools/v3 v3.5.1
