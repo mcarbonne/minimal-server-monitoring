@@ -8,7 +8,7 @@ require (
 	github.com/docker/docker v27.1.1+incompatible
 	github.com/goccy/go-yaml v1.12.0
 	github.com/moby/sys/mountinfo v0.7.2
-	golang.org/x/sys v0.22.0
+	golang.org/x/sys v0.23.0
 	gotest.tools/v3 v3.5.1
 )
 
