@@ -5,7 +5,7 @@ WORKDIR /src
 COPY . /src/.
 RUN make build
 
-FROM alpine:3.20.2 as runtime
+FROM alpine:3.20.3 as runtime
 
 RUN apk add libc6-compat
 COPY --from=buildstage --chmod=755 /src/minimal-server-monitoring /app/.
