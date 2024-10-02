@@ -2,10 +2,12 @@ package configmapper_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
 	"gotest.tools/v3/assert"
 )
@@ -48,6 +50,9 @@ type testStruct struct {
 	StructNotPresent subStruct         `json:"struct_to_present" default:"{}"`
 	Duration         time.Duration     `json:"duration"`
 	DurationDefault  time.Duration     `json:"duration_d" default:"6s"`
+
+	Custom        utils.RelativeAbsoluteValue `json:"custom" custom:"custom_func"`
+	CustomDefault utils.RelativeAbsoluteValue `json:"custom_d" custom:"custom_func" default:"20%"`
 }
 
 func check(t *testing.T, data *testStruct) {
@@ -84,6 +89,9 @@ func check(t *testing.T, data *testStruct) {
 
 	assert.Equal(t, data.Duration, time.Second*5)
 	assert.Equal(t, data.DurationDefault, time.Second*6)
+
+	assert.Equal(t, data.Custom.GetValue(100), uint64(5))
+	assert.Equal(t, data.CustomDefault.GetValue(100), uint64(20))
 }
 
 func TestMapJsonOnStruct(t *testing.T) {
@@ -102,10 +110,20 @@ func TestMapJsonOnStruct(t *testing.T) {
 	"slice_int":[1,2,3],
 	"map_str": {"a":"abc", "b":"def"},
 	"struct": {"int":5},
-	"duration":"5s"
+	"duration":"5s",
+	"custom":"5%"
 	}`
 	json.Unmarshal([]byte(myJsonString), &rawJson)
-	data, err := configmapper.MapOnStruct[testStruct](rawJson)
+	ctx := configmapper.MakeContext()
+	ctx.RegisterCustomParser("custom_func", func(s string) (reflect.Value, error) {
+		value, err := utils.RelativeAbsoluteValueFromString(s)
+		if err != nil {
+			return reflect.Value{}, err
+		} else {
+			return reflect.ValueOf(value), nil
+		}
+	})
+	data, err := configmapper.MapOnStructWithContext[testStruct](&ctx, rawJson)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,9 +152,19 @@ map_str:
 struct:
   int: 5
 duration: 5s
+custom: 5%
 	}`
 	yaml.Unmarshal([]byte(myYamlString), &rawYaml)
-	data, err := configmapper.MapOnStruct[testStruct](rawYaml)
+	ctx := configmapper.MakeContext()
+	ctx.RegisterCustomParser("custom_func", func(s string) (reflect.Value, error) {
+		value, err := utils.RelativeAbsoluteValueFromString(s)
+		if err != nil {
+			return reflect.Value{}, err
+		} else {
+			return reflect.ValueOf(value), nil
+		}
+	})
+	data, err := configmapper.MapOnStructWithContext[testStruct](&ctx, rawYaml)
 	if err != nil {
 		t.Fatal(err)
 	}
