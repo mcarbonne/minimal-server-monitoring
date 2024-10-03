@@ -53,7 +53,7 @@ func (provider *ProviderFileSystemUsage) GetUpdateTaskList(ctx context.Context, 
 	mountpoints := []string{}
 
 	if len(provider.MountPointWhitelist) > 0 {
-		mountpoints = provider.FSTypeWhitelist
+		mountpoints = provider.MountPointWhitelist
 	} else {
 		allMountPoints, err := mountinfo.GetMounts(func(info *mountinfo.Info) (skip, stop bool) {
 			return !slices.Contains(provider.FSTypeWhitelist, info.FSType) || slices.Contains(provider.MountPointBlacklist, info.Mountpoint), false
