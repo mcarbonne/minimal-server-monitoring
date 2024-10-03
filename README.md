@@ -29,11 +29,10 @@ Pre-built images are available on github packages:
 
 For automatic updates ([watchtower](https://github.com/containrrr/watchtower), [podman-auto-update](https://docs.podman.io/en/latest/markdown/podman-auto-update.1.html)...), using the lastest major tag available (`ghcr.io/mcarbonne/minimal-server-monitoring:2`) is recommanded to avoid breaking changes.
 
-## Migrations
-### 1.x to 2.x
-- `config.json` is now  `config.yml`
-- `scrape_interval` (for scrapers) is now a string with unit. Before, it was an integer (seconds). Example: `scrape_interval: 120` is now `scrape_interval: 120s` (or  even `scrape_interval: 2m`).
-- `filesystemusage` provider has been reworked to allow automatic mountpoints detection. See [here](#filesystemusage) for details.
+## Changelog
+
+See [here](CHANGELOG.md).
+
 
 ## Minimal configuration
 ### Default config.yml: container, services and available disk space monitoring, with shoutrrr alerts
@@ -118,7 +117,9 @@ docker run \
 |fstypes|list of file system types to consider|no|[ext4, btrfs]|
 |mountpoint_blacklist|list of mountpoints to ignore|no|[]|
 |mountpoint_whitelist|list of mountpoints to monitor. **When set, `fstypes` and `mountpoint_blacklist` are ignored and autodiscovery is skipped**|no|[]|
-|threshold_percent|minimum threshold (percentage) of available disk space|no|20|
+|threshold|minimum threshold of available disk space<sup>1</sup>|no|20%|
+
+1. threshold might either be relative (20%) or absolute (50m, 20gb ...). Absolute parsing is done using `ParseBytes` from [go-humanize](https://github.com/dustin/go-humanize), supported prefix list is available [here](https://github.com/dustin/go-humanize/blob/master/bytes.go).
 
 #### ping
 - provide one state per target (is target reachable)
@@ -165,7 +166,7 @@ scrapers:
     params:
       mountpoints:
         - "/"
-      threshold_percent: 15
+      threshold: 15%
 
 ```
 

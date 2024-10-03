@@ -5,6 +5,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/dustin/go-humanize"
 )
 
 type RelativeAbsoluteValue struct {
@@ -25,7 +27,7 @@ func RelativeAbsoluteValueFromString(value string) (RelativeAbsoluteValue, error
 	var relAbsValue RelativeAbsoluteValue
 	var err error
 	if strings.HasSuffix(value, "%") {
-		trimmed := value[0 : len(value)-1]
+		trimmed := strings.TrimSpace(value[0 : len(value)-1])
 		relAbsValue.relValue, err = strconv.ParseFloat(trimmed, 64)
 		if math.Signbit(relAbsValue.relValue) {
 			err = fmt.Errorf("illegal relative value '%v'<0", relAbsValue.relValue)
@@ -34,7 +36,7 @@ func RelativeAbsoluteValueFromString(value string) (RelativeAbsoluteValue, error
 		relAbsValue.relValue /= 100.
 		relAbsValue.relative = true
 	} else {
-		relAbsValue.absValue, err = strconv.ParseUint(value, 10, 64)
+		relAbsValue.absValue, err = humanize.ParseBytes(strings.TrimSpace(value))
 		relAbsValue.relative = false
 	}
 	return relAbsValue, err
