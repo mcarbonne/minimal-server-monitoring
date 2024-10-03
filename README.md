@@ -22,7 +22,6 @@ This tool follows [semantic versioning](https://semver.org/).
 
 Pre-built images are available on github packages:
 - `ghcr.io/mcarbonne/minimal-server-monitoring:main` (`main` branch)
-- `ghcr.io/mcarbonne/minimal-server-monitoring:dev` (`dev` branch)
 - `ghcr.io/mcarbonne/minimal-server-monitoring:latest`: latest tagged version
 - `ghcr.io/mcarbonne/minimal-server-monitoring:x.x.x`
 - `ghcr.io/mcarbonne/minimal-server-monitoring:x.x`
