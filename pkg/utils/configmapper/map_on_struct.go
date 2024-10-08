@@ -40,8 +40,15 @@ func stringToUint(type_ reflect.Type, valueAsString string) (reflect.Value, erro
 	return defaultValue, nil
 }
 
-func getDefaultValue(field reflect.StructField) (reflect.Value, error) {
+func getDefaultValue(ctx *Context, field reflect.StructField) (reflect.Value, error) {
 	if tag, ok := field.Tag.Lookup("default"); ok {
+
+		customParser, err := ctx.getCustomParserIfAny(&field)
+		if err != nil {
+			return reflect.Value{}, err
+		} else if customParser != nil {
+			return (*customParser)(tag)
+		}
 
 		if field.Type == reflect.TypeOf(time.Second) {
 			duration, err := time.ParseDuration(tag)
@@ -59,7 +66,7 @@ func getDefaultValue(field reflect.StructField) (reflect.Value, error) {
 				out := reflect.MakeSlice(field.Type, 0, 0)
 				elements := strings.Split(tag[1:len(tag)-1], ",")
 				for _, element := range elements {
-					value, err := mapOnAny(field.Type.Elem(), strings.TrimSpace(element), "")
+					value, err := mapOnAny(ctx, field.Type.Elem(), strings.TrimSpace(element), "")
 					if err != nil {
 						return reflect.Value{}, err
 					}
@@ -77,7 +84,7 @@ func getDefaultValue(field reflect.StructField) (reflect.Value, error) {
 			}
 		case reflect.Struct:
 			if tag == "{}" {
-				defaultValue, err := mapOnStruct(field.Type, map[string]any{}, "")
+				defaultValue, err := mapOnStruct(ctx, field.Type, map[string]any{}, "")
 				if err != nil {
 					return reflect.Value{}, fmt.Errorf("unable to default struct: %v", err)
 				} else {
@@ -100,7 +107,7 @@ func getDefaultValue(field reflect.StructField) (reflect.Value, error) {
 	return reflect.Value{}, nil
 }
 
-func mapOnSlice(type_ reflect.Type, raw any, level string) (reflect.Value, error) {
+func mapOnSlice(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
 	asSlice, ok := raw.([]any)
 	if !ok {
 		return reflect.Value{}, fmt.Errorf("[%v] does not match slice", level)
@@ -110,7 +117,7 @@ func mapOnSlice(type_ reflect.Type, raw any, level string) (reflect.Value, error
 	slice := reflect.MakeSlice(type_, 0, 0)
 
 	for i, elem := range asSlice {
-		value, err := mapOnAny(elemType, elem, fmt.Sprintf("%v[%v]", level, i))
+		value, err := mapOnAny(ctx, elemType, elem, fmt.Sprintf("%v[%v]", level, i))
 		if err != nil {
 			return reflect.Value{}, err
 		}
@@ -119,7 +126,18 @@ func mapOnSlice(type_ reflect.Type, raw any, level string) (reflect.Value, error
 	return slice, nil
 }
 
-func mapOnStruct(type_ reflect.Type, raw any, level string) (reflect.Value, error) {
+func mapOnPtr(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
+	if raw == nil {
+		return reflect.Value{}, nil
+	} else {
+		value, err := mapOnAny(ctx, type_.Elem(), raw, level)
+		newValue := reflect.New(value.Type())
+		newValue.Elem().Set(value)
+		return newValue, err
+	}
+}
+
+func mapOnStruct(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
 	asMap, ok := raw.(map[string]any)
 	if !ok {
 		return reflect.Value{}, fmt.Errorf("[%v] does not match struct", level)
@@ -135,8 +153,9 @@ func mapOnStruct(type_ reflect.Type, raw any, level string) (reflect.Value, erro
 		field := type_.Field(i)
 		if tag, ok := field.Tag.Lookup("json"); ok {
 			rawValue, ok := asMap[tag]
-			if !ok {
-				defaultValue, err := getDefaultValue(field)
+			isOptional := field.Type.Kind() == reflect.Ptr
+			if !ok && !isOptional {
+				defaultValue, err := getDefaultValue(ctx, field)
 				if err != nil {
 					return reflect.Value{}, fmt.Errorf("[%v/%v] unable to parse default value: %v", level, tag, err)
 				}
@@ -146,10 +165,23 @@ func mapOnStruct(type_ reflect.Type, raw any, level string) (reflect.Value, erro
 					target.Field(i).Set(defaultValue)
 				}
 			} else {
-				value, err := mapOnAny(field.Type, rawValue, level+"/"+tag)
+				customParser, err := ctx.getCustomParserIfAny(&field)
+				var value reflect.Value
 				if err != nil {
 					return reflect.Value{}, err
+				} else if customParser != nil {
+					var stringValue string
+					stringValue, err = getAs[string](rawValue)
+					if err == nil {
+						value, err = (*customParser)(stringValue)
+					}
 				} else {
+					value, err = mapOnAny(ctx, field.Type, rawValue, level+"/"+tag)
+				}
+
+				if err != nil {
+					return reflect.Value{}, err
+				} else if value.IsValid() {
 					target.Field(i).Set(value)
 				}
 
@@ -159,7 +191,7 @@ func mapOnStruct(type_ reflect.Type, raw any, level string) (reflect.Value, erro
 	return target, nil
 }
 
-func mapOnMap(type_ reflect.Type, raw any, level string) (reflect.Value, error) {
+func mapOnMap(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
 	asMap, ok := raw.(map[string]any)
 	if !ok {
 		return reflect.Value{}, fmt.Errorf("[%v] does not match map", level)
@@ -177,7 +209,7 @@ func mapOnMap(type_ reflect.Type, raw any, level string) (reflect.Value, error) 
 	}
 	target := reflect.MakeMapWithSize(type_, 0)
 	for k, v := range asMap {
-		value, err := mapOnAny(elemType, v, level+"/"+k)
+		value, err := mapOnAny(ctx, elemType, v, level+"/"+k)
 		if err != nil {
 			return reflect.Value{}, err
 		}
@@ -228,7 +260,7 @@ func mapOnString(raw any) (reflect.Value, error) {
 	return reflect.ValueOf(value), nil
 }
 
-func mapOnAny(type_ reflect.Type, raw any, level string) (reflect.Value, error) {
+func mapOnAny(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
 	if type_ == reflect.TypeOf(time.Second) {
 		durationAsString, err := getAs[string](raw)
 		if err != nil {
@@ -250,29 +282,36 @@ func mapOnAny(type_ reflect.Type, raw any, level string) (reflect.Value, error) 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return mapOnInt(type_, raw)
 	case reflect.Struct:
-		return mapOnStruct(type_, raw, level)
+		return mapOnStruct(ctx, type_, raw, level)
 	case reflect.Map:
-		return mapOnMap(type_, raw, level)
+		return mapOnMap(ctx, type_, raw, level)
 	case reflect.Slice:
-		return mapOnSlice(type_, raw, level)
+		return mapOnSlice(ctx, type_, raw, level)
 	case reflect.Interface:
 		return reflect.ValueOf(raw), nil
+	case reflect.Ptr:
+		return mapOnPtr(ctx, type_, raw, level)
 	default:
 		return reflect.Value{}, fmt.Errorf("[%v] mapOnAny: unsupported type %v", level, kind)
 	}
 }
 
-func MapOnStruct[T any](raw map[string]any) (T, error) {
+func MapOnStructWithContext[T any](context *Context, raw map[string]any) (T, error) {
 	if kind := reflect.TypeFor[T]().Kind(); kind != reflect.Struct {
 		var output T
 		return output, fmt.Errorf("require a struct type, %v provided", kind)
 	}
 
-	s, err := mapOnStruct(reflect.TypeFor[T](), raw, "")
+	s, err := mapOnStruct(context, reflect.TypeFor[T](), raw, "")
 
 	if err != nil {
 		return utils.Dummy[T](), err
 	} else {
 		return s.Interface().(T), nil
 	}
+}
+
+func MapOnStruct[T any](raw map[string]any) (T, error) {
+	ctx := MakeContext()
+	return MapOnStructWithContext[T](&ctx, raw)
 }
