@@ -21,7 +21,7 @@ func LoadProviderFromConfig(ctx context.Context, cfg Config) (Provider, error) {
 	case "systemd":
 		return NewProviderSystemd(ctx, cfg.Params)
 	case "filesystemusage":
-		return NewProviderFileSystemUsage(cfg.Params)
+		return NewProviderFileSystemUsage(cfg.Params, cfg.ScrapeInterval)
 	default:
 		return nil, fmt.Errorf("illegal provider type: %v", cfg.Type)
 	}

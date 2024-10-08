@@ -126,6 +126,17 @@ func mapOnSlice(ctx *Context, type_ reflect.Type, raw any, level string) (reflec
 	return slice, nil
 }
 
+func mapOnPtr(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
+	if raw == nil {
+		return reflect.Value{}, nil
+	} else {
+		value, err := mapOnAny(ctx, type_.Elem(), raw, level)
+		newValue := reflect.New(value.Type())
+		newValue.Elem().Set(value)
+		return newValue, err
+	}
+}
+
 func mapOnStruct(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
 	asMap, ok := raw.(map[string]any)
 	if !ok {
@@ -142,7 +153,8 @@ func mapOnStruct(ctx *Context, type_ reflect.Type, raw any, level string) (refle
 		field := type_.Field(i)
 		if tag, ok := field.Tag.Lookup("json"); ok {
 			rawValue, ok := asMap[tag]
-			if !ok {
+			isOptional := field.Type.Kind() == reflect.Ptr
+			if !ok && !isOptional {
 				defaultValue, err := getDefaultValue(ctx, field)
 				if err != nil {
 					return reflect.Value{}, fmt.Errorf("[%v/%v] unable to parse default value: %v", level, tag, err)
@@ -169,7 +181,7 @@ func mapOnStruct(ctx *Context, type_ reflect.Type, raw any, level string) (refle
 
 				if err != nil {
 					return reflect.Value{}, err
-				} else {
+				} else if value.IsValid() {
 					target.Field(i).Set(value)
 				}
 
@@ -277,6 +289,8 @@ func mapOnAny(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.
 		return mapOnSlice(ctx, type_, raw, level)
 	case reflect.Interface:
 		return reflect.ValueOf(raw), nil
+	case reflect.Ptr:
+		return mapOnPtr(ctx, type_, raw, level)
 	default:
 		return reflect.Value{}, fmt.Errorf("[%v] mapOnAny: unsupported type %v", level, kind)
 	}

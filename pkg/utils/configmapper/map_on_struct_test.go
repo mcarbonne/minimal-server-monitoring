@@ -41,6 +41,8 @@ type testStruct struct {
 
 	Str              string            `json:"str"`
 	StrDefault       string            `json:"str_d" default:"default_str"`
+	OptStr           *string           `json:"opt_str"`
+	OptStrNoValue    *string           `json:"opt_str_no_value"`
 	Slice            []int             `json:"slice_int"`
 	SliceEmpty       []int             `json:"slice_int_empty" default:"[]"`
 	SliceDefault     []int             `json:"slice_int_default" default:"[1,2,43]"`
@@ -80,6 +82,8 @@ func check(t *testing.T, data *testStruct) {
 
 	assert.Equal(t, data.Str, "str")
 	assert.Equal(t, data.StrDefault, "default_str")
+	assert.Equal(t, *data.OptStr, "opt_str")
+	assert.Equal(t, data.OptStrNoValue, utils.Dummy[*string]())
 	assert.DeepEqual(t, data.Slice, []int{1, 2, 3})
 	assert.DeepEqual(t, data.SliceEmpty, []int{})
 	assert.DeepEqual(t, data.SliceDefault, []int{1, 2, 43})
@@ -107,6 +111,7 @@ func TestMapJsonOnStruct(t *testing.T) {
 	"uint32":10,
 	"uint64":11,
 	"str":"str",
+	"opt_str":"opt_str",
 	"slice_int":[1,2,3],
 	"map_str": {"a":"abc", "b":"def"},
 	"struct": {"int":5},
@@ -142,6 +147,7 @@ uint16: 9
 uint32: 10
 uint64: 11
 str: str
+opt_str: opt_str
 slice_int:
   - 1
   - 2

@@ -108,7 +108,7 @@ docker run \
   - container status (check if started)
   - container restart (check if restarting forever)
 #### filesystemusage
-- provide one state per mountpoint (check if enough free disk space available)
+- provide two states for each mountpoint (check if there is enough free disk space available and if there are rapid changes)
 - multiple instances allowed
 
 |parameter|description|required|default value|
@@ -118,8 +118,12 @@ docker run \
 |mountpoint_blacklist|list of mountpoints to ignore|no|[]|
 |mountpoint_whitelist|list of mountpoints to monitor. **When set, `fstypes` and `mountpoint_blacklist` are ignored and autodiscovery is skipped**|no|[]|
 |threshold|minimum threshold of available disk space<sup>1</sup>|no|20%|
+|rate_threshold|rate threshold over rate_threshold_window period<sup>1,2</sup>|no|0.5%|
+|rate_threshold_window|window duration<sup>2</sup>|no|5m|
 
-1. threshold might either be relative (20%) or absolute (50m, 20gb ...). Absolute parsing is done using `ParseBytes` from [go-humanize](https://github.com/dustin/go-humanize), supported prefix list is available [here](https://github.com/dustin/go-humanize/blob/master/bytes.go).
+1. thresholds might either be relative (20%) or absolute (50m, 20gb ...). Absolute parsing is done using `ParseBytes` from [go-humanize](https://github.com/dustin/go-humanize), supported prefix list is available [here](https://github.com/dustin/go-humanize/blob/master/bytes.go).
+2. rate threshold triggers an alert when remaining disk space changes by more than `rate_threshold` over `rate_threshold_window` (both increase and decrease).
+Note: `rate_threshold` must be greater than or equal to `scrape_interval`.
 
 #### ping
 - provide one state per target (is target reachable)
