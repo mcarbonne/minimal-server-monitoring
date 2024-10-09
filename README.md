@@ -118,7 +118,7 @@ docker run \
 |mountpoint_blacklist|list of mountpoints to ignore|no|[]|
 |mountpoint_whitelist|list of mountpoints to monitor. **When set, `fstypes` and `mountpoint_blacklist` are ignored and autodiscovery is skipped**|no|[]|
 |threshold|minimum threshold of available disk space<sup>1</sup>|no|20%|
-|rate_threshold|rate threshold over rate_threshold_window period<sup>1,2</sup>|no|0.5%|
+|rate_threshold|rate threshold over rate_threshold_window period<sup>1,2</sup>|no|1g|
 |rate_threshold_window|window duration<sup>2</sup>|no|5m|
 
 1. thresholds might either be relative (20%) or absolute (50m, 20gb ...). Absolute parsing is done using `ParseBytes` from [go-humanize](https://github.com/dustin/go-humanize), supported prefix list is available [here](https://github.com/dustin/go-humanize/blob/master/bytes.go).

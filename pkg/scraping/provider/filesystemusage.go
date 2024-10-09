@@ -24,7 +24,7 @@ type ProviderFileSystemUsage struct {
 	MountPointBlacklist     []string                    `json:"mountpoint_blacklist" default:"[]"`
 	MountPointWhitelist     []string                    `json:"mountpoint_whitelist" default:"[]"`
 	SpaceRemainingThreshold utils.RelativeAbsoluteValue `json:"threshold" default:"20%" custom:"relative_absolute_value"`
-	RateThreshold           utils.RelativeAbsoluteValue `json:"rate_threshold" default:"0.5%" custom:"relative_absolute_value"`
+	RateThreshold           utils.RelativeAbsoluteValue `json:"rate_threshold" default:"1g" custom:"relative_absolute_value"`
 	RateThresholdWindow     time.Duration               `json:"rate_threshold_window" default:"5m"`
 
 	mountPointStats map[string]*stats.WindowCollector[uint64]
