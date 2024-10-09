@@ -15,6 +15,12 @@ func TestRelAbsValueParsingRelative(t *testing.T) {
 	assert.Equal(t, val.GetValue(100), uint64(5))
 	assert.Equal(t, val.GetValue(1000), uint64(50))
 
+	val, err = utils.RelativeAbsoluteValueFromString("0.3%")
+
+	assert.NilError(t, err)
+	assert.Equal(t, val.GetValue(100), uint64(0))
+	assert.Equal(t, val.GetValue(1000), uint64(3))
+
 	val, err = utils.RelativeAbsoluteValueFromString("-5 %")
 
 	assert.ErrorContains(t, err, "illegal relative value")

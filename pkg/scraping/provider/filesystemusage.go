@@ -3,7 +3,6 @@ package provider
 import (
 	"context"
 	"fmt"
-	"math"
 	"reflect"
 	"slices"
 	"strings"
@@ -60,12 +59,21 @@ func (provider *ProviderFileSystemUsage) updateSpaceIncreaseStats(metric MetricW
 	if mpStats.Count() >= 2 {
 		first := mpStats.First()
 		last := mpStats.Last()
-		rate := math.Abs(float64(last.Data-first.Data) / (last.Timestamp.Sub(first.Timestamp).Seconds()))
-		threshold := float64(float64(provider.RateThreshold.GetValue(totalSpace)) / provider.RateThresholdWindow.Seconds())
+		deltaAvailable := max(last.Data, first.Data) - min(last.Data, first.Data)
+		rate := float64(deltaAvailable) / (last.Timestamp.Sub(first.Timestamp).Seconds())
+		threshold := float64(provider.RateThreshold.GetValue(totalSpace)) / provider.RateThresholdWindow.Seconds()
 		if rate >= threshold {
-			metric.PushFailure("available space changed quickly from %v to %v in %v",
-				humanize.Bytes(first.Data), humanize.Bytes(last.Data),
-				last.Timestamp.Sub(first.Timestamp).Round(time.Second))
+			if last.Data > first.Data {
+				metric.PushFailure("available space increased rapidly by %v in %v to reach %v",
+					humanize.Bytes(deltaAvailable),
+					last.Timestamp.Sub(first.Timestamp).Round(time.Second),
+					humanize.Bytes(last.Data))
+			} else {
+				metric.PushFailure("available space decreased rapidly by %v in %v to reach %v",
+					humanize.Bytes(deltaAvailable),
+					last.Timestamp.Sub(first.Timestamp).Round(time.Second),
+					humanize.Bytes(last.Data))
+			}
 		} else {
 			metric.PushOK()
 		}
