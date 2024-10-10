@@ -123,7 +123,7 @@ docker run \
 
 1. thresholds might either be relative (20%) or absolute (50m, 20gb ...). Absolute parsing is done using `ParseBytes` from [go-humanize](https://github.com/dustin/go-humanize), supported prefix list is available [here](https://github.com/dustin/go-humanize/blob/master/bytes.go).
 2. rate threshold triggers an alert when remaining disk space changes by more than `rate_threshold` over `rate_threshold_window` (both increase and decrease).
-Note: `rate_threshold` must be greater than or equal to `scrape_interval`.
+Note: `rate_threshold_window` must be greater than or equal to `scrape_interval`.
 
 #### ping
 - provide one state per target (is target reachable)
