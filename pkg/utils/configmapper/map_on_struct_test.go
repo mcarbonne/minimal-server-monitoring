@@ -118,7 +118,8 @@ func TestMapJsonOnStruct(t *testing.T) {
 	"duration":"5s",
 	"custom":"5%"
 	}`
-	json.Unmarshal([]byte(myJsonString), &rawJson)
+	err := json.Unmarshal([]byte(myJsonString), &rawJson)
+	assert.NilError(t, err)
 	ctx := configmapper.MakeContext()
 	ctx.RegisterCustomParser("custom_func", func(s string) (reflect.Value, error) {
 		value, err := utils.RelativeAbsoluteValueFromString(s)
@@ -159,8 +160,9 @@ struct:
   int: 5
 duration: 5s
 custom: 5%
-	}`
-	yaml.Unmarshal([]byte(myYamlString), &rawYaml)
+`
+	err := yaml.Unmarshal([]byte(myYamlString), &rawYaml)
+	assert.NilError(t, err)
 	ctx := configmapper.MakeContext()
 	ctx.RegisterCustomParser("custom_func", func(s string) (reflect.Value, error) {
 		value, err := utils.RelativeAbsoluteValueFromString(s)
