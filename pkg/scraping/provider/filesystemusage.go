@@ -32,7 +32,7 @@ type ProviderFileSystemUsage struct {
 
 func NewProviderFileSystemUsage(params map[string]any, scrapeInterval time.Duration) (Provider, error) {
 	mapperCtx := configmapper.MakeContext()
-	mapperCtx.RegisterCustomParser("relative_absolute_value", func(s string) (reflect.Value, error) {
+	err := mapperCtx.RegisterCustomParser("relative_absolute_value", func(s string) (reflect.Value, error) {
 		value, err := utils.RelativeAbsoluteValueFromString(s)
 		if err != nil {
 			return reflect.Value{}, err
@@ -40,10 +40,17 @@ func NewProviderFileSystemUsage(params map[string]any, scrapeInterval time.Durat
 			return reflect.ValueOf(value), nil
 		}
 	})
+	if err != nil {
+		return nil, err
+	}
+
 	cfg, err := configmapper.MapOnStructWithContext[ProviderFileSystemUsage](&mapperCtx, params)
+	if err != nil {
+		return nil, err
+	}
 	cfg.mountPointStats = make(map[string]*stats.WindowCollector[uint64])
 	if cfg.RateThresholdWindow < scrapeInterval {
-		return nil, fmt.Errorf("rate_threshold must be greater than or equal to scrape_interval")
+		return nil, fmt.Errorf("rate_threshold_window must be greater than or equal to scrape_interval (%v < %v)", cfg.RateThresholdWindow, scrapeInterval)
 	}
 	return &cfg, err
 }

@@ -28,7 +28,7 @@ func makeStartupMessage(cfg *config.Config) notifier.Message {
 	for scraperName, scraperCfg := range cfg.Scrapers {
 		startupMsg += fmt.Sprintf("\n  * %v (%v) every %v", scraperName, scraperCfg.Type, scraperCfg.ScrapeInterval)
 	}
-	return notifier.MakeMessage(notifier.Notification, startupMsg)
+	return notifier.MakeMessage(notifier.Notification, "%v", startupMsg)
 }
 
 func main() {

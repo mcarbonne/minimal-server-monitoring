@@ -2,7 +2,6 @@ package alert
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
@@ -22,8 +21,7 @@ func AlertCenter(ctx context.Context, alertCfg Config, scrapResultChan <-chan an
 			case provider.MetricMessage:
 				outputChan <- metricIdWithMsg{
 					metricId: element.MetricID,
-					message: notifier.MakeMessage(notifier.Notification,
-						fmt.Sprintf("%v: %v", element.Name, element.Description)),
+					message:  notifier.MakeMessage(notifier.Notification, "%v: %v", element.Name, element.Description),
 				}
 			case provider.MetricState:
 				if metricStateMachines[element.MetricID] == nil {

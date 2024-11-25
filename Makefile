@@ -14,6 +14,10 @@ test-coverage:
 
 test:
 	go test ./...
+	
+lint:
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
+	golangci-lint run ./...
 
 generate:
 	go generate ./...

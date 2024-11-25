@@ -34,7 +34,7 @@ func NewJSONStorage(jsonPath string) Storager {
 	decoded := JsonStorageFile{}
 	err = jsonParser.Decode(&decoded)
 	if err != nil {
-		logging.Fatal(err.Error())
+		logging.Fatal("%v", err.Error())
 	}
 	js.database = decoded.Database
 	if js.database == nil {
@@ -59,7 +59,10 @@ func (js *JSONStorage) Sync(force bool) {
 		}
 		encoder := json.NewEncoder(storageFile)
 		encoder.SetIndent("", " ")
-		encoder.Encode(&toBeEncoded)
+		err = encoder.Encode(&toBeEncoded)
+		if err != nil {
+			logging.Fatal("Unable to encode: %v", err.Error())
+		}
 	}
 	js.MemoryStorage.syncUnsafe(force)
 }

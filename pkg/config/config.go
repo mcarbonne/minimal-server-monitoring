@@ -32,7 +32,7 @@ func LoadConfiguration(configPath string) Config {
 	configFileBytes, err := os.ReadFile(configPath)
 
 	if err != nil {
-		logging.Fatal(err.Error())
+		logging.Fatal("%v", err.Error())
 	}
 
 	var rawYaml map[string]interface{}
@@ -42,7 +42,7 @@ func LoadConfiguration(configPath string) Config {
 	yamlParser := yaml.NewDecoder(strings.NewReader(configFile))
 	err = yamlParser.Decode(&rawYaml)
 	if err != nil {
-		logging.Fatal(err.Error())
+		logging.Fatal("%v", err.Error())
 	}
 
 	config, err := configmapper.MapOnStruct[Config](rawYaml)
