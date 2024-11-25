@@ -41,9 +41,12 @@ func NewProviderFileSystemUsage(params map[string]any, scrapeInterval time.Durat
 		}
 	})
 	cfg, err := configmapper.MapOnStructWithContext[ProviderFileSystemUsage](&mapperCtx, params)
+	if err != nil {
+		return nil, err
+	}
 	cfg.mountPointStats = make(map[string]*stats.WindowCollector[uint64])
 	if cfg.RateThresholdWindow < scrapeInterval {
-		return nil, fmt.Errorf("rate_threshold must be greater than or equal to scrape_interval")
+		return nil, fmt.Errorf("rate_threshold_window must be greater than or equal to scrape_interval (%v < %v)", cfg.RateThresholdWindow, scrapeInterval)
 	}
 	return &cfg, err
 }
