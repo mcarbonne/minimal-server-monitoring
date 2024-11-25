@@ -45,7 +45,10 @@ mainloop:
 		case msg := <-messageChan:
 			msg.Title = machineName + " " + msg.Title
 			for _, notifier := range notifierList {
-				notifier.Send(msg)
+				err = notifier.Send(msg)
+				if err != nil {
+					logging.Error("Failed to notify: %v", err)
+				}
 			}
 		}
 	}

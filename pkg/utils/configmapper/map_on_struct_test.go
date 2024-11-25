@@ -121,7 +121,7 @@ func TestMapJsonOnStruct(t *testing.T) {
 	err := json.Unmarshal([]byte(myJsonString), &rawJson)
 	assert.NilError(t, err)
 	ctx := configmapper.MakeContext()
-	ctx.RegisterCustomParser("custom_func", func(s string) (reflect.Value, error) {
+	err = ctx.RegisterCustomParser("custom_func", func(s string) (reflect.Value, error) {
 		value, err := utils.RelativeAbsoluteValueFromString(s)
 		if err != nil {
 			return reflect.Value{}, err
@@ -129,6 +129,9 @@ func TestMapJsonOnStruct(t *testing.T) {
 			return reflect.ValueOf(value), nil
 		}
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	data, err := configmapper.MapOnStructWithContext[testStruct](&ctx, rawJson)
 	if err != nil {
 		t.Fatal(err)
@@ -164,7 +167,7 @@ custom: 5%
 	err := yaml.Unmarshal([]byte(myYamlString), &rawYaml)
 	assert.NilError(t, err)
 	ctx := configmapper.MakeContext()
-	ctx.RegisterCustomParser("custom_func", func(s string) (reflect.Value, error) {
+	err = ctx.RegisterCustomParser("custom_func", func(s string) (reflect.Value, error) {
 		value, err := utils.RelativeAbsoluteValueFromString(s)
 		if err != nil {
 			return reflect.Value{}, err
@@ -172,6 +175,9 @@ custom: 5%
 			return reflect.ValueOf(value), nil
 		}
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	data, err := configmapper.MapOnStructWithContext[testStruct](&ctx, rawYaml)
 	if err != nil {
 		t.Fatal(err)

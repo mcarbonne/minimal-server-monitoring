@@ -32,7 +32,7 @@ type ProviderFileSystemUsage struct {
 
 func NewProviderFileSystemUsage(params map[string]any, scrapeInterval time.Duration) (Provider, error) {
 	mapperCtx := configmapper.MakeContext()
-	mapperCtx.RegisterCustomParser("relative_absolute_value", func(s string) (reflect.Value, error) {
+	err := mapperCtx.RegisterCustomParser("relative_absolute_value", func(s string) (reflect.Value, error) {
 		value, err := utils.RelativeAbsoluteValueFromString(s)
 		if err != nil {
 			return reflect.Value{}, err
@@ -40,6 +40,10 @@ func NewProviderFileSystemUsage(params map[string]any, scrapeInterval time.Durat
 			return reflect.ValueOf(value), nil
 		}
 	})
+	if err != nil {
+		return nil, err
+	}
+
 	cfg, err := configmapper.MapOnStructWithContext[ProviderFileSystemUsage](&mapperCtx, params)
 	if err != nil {
 		return nil, err
