@@ -5,7 +5,7 @@ go 1.22.1
 require (
 	github.com/containrrr/shoutrrr v0.8.0
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/docker/docker v27.3.1+incompatible
+	github.com/docker/docker v27.4.0+incompatible
 	github.com/dustin/go-humanize v1.0.1
 	github.com/goccy/go-yaml v1.14.3
 	github.com/moby/sys/mountinfo v0.7.2
