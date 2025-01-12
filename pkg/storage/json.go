@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
 )
 
 type JsonStorageFile struct {

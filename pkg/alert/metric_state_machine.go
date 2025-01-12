@@ -1,9 +1,9 @@
 package alert
 
 import (
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/notifier"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/scraping/provider"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 )
 
 type MetricStateMachine struct {

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper"
 	"gotest.tools/v3/assert"
 )
 

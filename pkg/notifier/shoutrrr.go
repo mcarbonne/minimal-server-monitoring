@@ -4,7 +4,7 @@ import (
 	"github.com/containrrr/shoutrrr"
 	"github.com/containrrr/shoutrrr/pkg/router"
 	"github.com/containrrr/shoutrrr/pkg/types"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper"
 )
 
 type Shoutrrr struct {

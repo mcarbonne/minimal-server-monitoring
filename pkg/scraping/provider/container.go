@@ -8,8 +8,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/storage"
 )
 
 type ProviderContainer struct {

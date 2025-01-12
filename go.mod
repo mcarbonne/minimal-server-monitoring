@@ -1,4 +1,4 @@
-module github.com/mcarbonne/minimal-server-monitoring
+module github.com/mcarbonne/minimal-server-monitoring/v2
 
 go 1.22.1
 

@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/storage"
 )
 
 type UpdateTaskList []func()

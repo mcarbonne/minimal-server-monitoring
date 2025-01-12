@@ -1,7 +1,7 @@
 package notifier
 
 import (
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
 )
 
 type ConsoleNotifier struct {

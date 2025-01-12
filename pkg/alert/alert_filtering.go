@@ -3,9 +3,9 @@ package alert
 import (
 	"time"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/notifier"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 )
 
 const maximumNotificationThreshold int = 5

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 )
 
 func getAs[Output any](input any) (Output, error) {

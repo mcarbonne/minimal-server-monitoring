@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/stats"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/stats"
 	"gotest.tools/v3/assert"
 )
 
