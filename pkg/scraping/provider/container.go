@@ -8,6 +8,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
 )
 
@@ -88,6 +89,8 @@ func (containerProvider *ProviderContainer) GetUpdateTaskList(ctx context.Contex
 				inspect, err := containerProvider.client.ContainerInspect(ctx, ctr.ID)
 				if err == nil {
 					containerProvider.updateRestartCountMetric(resultWrapper, ctr, inspect)
+				} else if client.IsErrNotFound(err) {
+					logging.Info("Container %v does not exist anymore, ignoring", ctr.ID)
 				} else {
 					inspectErrorList = append(inspectErrorList, err)
 				}
