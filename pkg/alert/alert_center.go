@@ -3,9 +3,9 @@ package alert
 import (
 	"context"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/notifier"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/scraping/provider"
 )
 
 func AlertCenter(ctx context.Context, alertCfg Config, scrapResultChan <-chan any, notifyChan chan<- notifier.Message) {

@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/alert"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/alert"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/notifier"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/scraping/provider"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper"
 )
 
 type Config struct {

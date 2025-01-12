@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/coreos/go-systemd/v22/dbus"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/storage"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper"
 )
 
 type ProviderSystemd struct {

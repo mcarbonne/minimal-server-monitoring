@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/scheduler"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping/provider"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/scheduler"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/scraping/provider"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/storage"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 )
 
 const maxParallelScrapingJobs uint = 8

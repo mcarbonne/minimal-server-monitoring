@@ -9,13 +9,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/alert"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/config"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/scraping"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/alert"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/config"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/notifier"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/scraping"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/storage"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 )
 
 func usage() {

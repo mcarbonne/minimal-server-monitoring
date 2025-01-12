@@ -3,7 +3,7 @@ package utils_test
 import (
 	"testing"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 	"gotest.tools/v3/assert"
 )
 

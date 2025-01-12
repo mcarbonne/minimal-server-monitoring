@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/storage"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/configmapper"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/utils/stats"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/storage"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/stats"
 	"github.com/moby/sys/mountinfo"
 	"golang.org/x/sys/unix"
 )

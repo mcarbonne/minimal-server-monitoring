@@ -3,8 +3,8 @@ package alert
 import (
 	"time"
 
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/logging"
-	"github.com/mcarbonne/minimal-server-monitoring/pkg/notifier"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/notifier"
 )
 
 const maxAggregatedMessages int = 10
