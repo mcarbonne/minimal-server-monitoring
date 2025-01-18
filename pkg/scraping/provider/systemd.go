@@ -2,9 +2,12 @@ package provider
 
 import (
 	"context"
+	"fmt"
+	"regexp"
 
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/storage"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper"
 )
 
@@ -25,17 +28,39 @@ func listServiceUnits(ctx context.Context, systemdConn *dbus.Conn) []dbus.UnitSt
 	return listOfUnits
 }
 
+func extractPodmanHealthCheckPrettyName(unit dbus.UnitStatus) *string {
+	podmanHealthCheckServiceRegex := `^[\da-f]{64}\.service$`
+	unitNameMatched, err := regexp.MatchString(podmanHealthCheckServiceRegex, unit.Name)
+	if err == nil && unitNameMatched {
+		containerId := unit.Name[:64]
+		expectedDescription := fmt.Sprintf("/usr/bin/podman healthcheck run %v", containerId)
+		if unit.Description == expectedDescription {
+			return utils.Ptr(fmt.Sprintf("container %v healthcheck", containerId[:12]))
+		}
+	}
+	return nil
+}
+
+func getServicePrettyName(unit dbus.UnitStatus) string {
+	if prettyName := extractPodmanHealthCheckPrettyName(unit); prettyName != nil {
+		return *prettyName
+	} else {
+		return unit.Name
+	}
+}
+
 func (systemdProvider *ProviderSystemd) GetUpdateTaskList(ctx context.Context, resultWrapper *ScrapeResultWrapper, storage storage.Storager) UpdateTaskList {
 	return UpdateTaskList{
 		func() {
 			listOfUnits := listServiceUnits(ctx, systemdProvider.systemdConn)
 
 			for _, unit := range listOfUnits {
-				metric := resultWrapper.Metric("systemd_"+unit.Name, unit.Name+"@systemd")
+				prettyName := getServicePrettyName(unit)
+				metric := resultWrapper.Metric("systemd_"+unit.Name, prettyName+"@systemd")
 				if unit.ActiveState == "failed" {
-					metric.PushFailure("%v is %v", unit.Name, unit.ActiveState)
+					metric.PushFailure("")
 				} else {
-					metric.PushOK()
+					metric.PushOK("")
 				}
 			}
 		},

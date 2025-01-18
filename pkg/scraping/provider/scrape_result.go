@@ -60,8 +60,8 @@ func (wrapper *MetricWrapper) PushFailure(description string, args ...any) {
 	wrapper.resultWrapper.pushState(wrapper.metricID, wrapper.name, false, description, args...)
 }
 
-func (wrapper *MetricWrapper) PushOK() {
-	wrapper.resultWrapper.pushState(wrapper.metricID, wrapper.name, true, "")
+func (wrapper *MetricWrapper) PushOK(description string, args ...any) {
+	wrapper.resultWrapper.pushState(wrapper.metricID, wrapper.name, true, description, args...)
 }
 
 func (wrapper *MetricWrapper) PushMessage(description string, args ...any) {
