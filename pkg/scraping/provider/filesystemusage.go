@@ -82,7 +82,7 @@ func (provider *ProviderFileSystemUsage) updateSpaceIncreaseStats(metric MetricW
 					humanize.Bytes(last.Data))
 			}
 		} else {
-			metric.PushOK()
+			metric.PushOK("")
 		}
 	}
 }
@@ -110,7 +110,7 @@ func (provider *ProviderFileSystemUsage) checkMountPoint(resultWrapper *ScrapeRe
 		if remainingSpace < provider.SpaceRemainingThreshold.GetValue(totalSpace) {
 			metric.PushFailure("low space remaining (%v%% / %v)", 100*remainingSpace/totalSpace, humanize.Bytes(remainingSpace))
 		} else {
-			metric.PushOK()
+			metric.PushOK("")
 		}
 	}
 }

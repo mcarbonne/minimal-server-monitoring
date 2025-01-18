@@ -47,7 +47,7 @@ func (pingProvider *ProviderPing) GetUpdateTaskList(ctx context.Context, resultW
 			func() {
 				metric := resultWrapper.Metric("ping_"+target, "ping ["+target+"]")
 				if pingRetry(target, pingProvider.RetryCount) {
-					metric.PushOK()
+					metric.PushOK("")
 				} else {
 					metric.PushFailure("unreachable")
 				}

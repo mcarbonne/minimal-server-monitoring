@@ -41,7 +41,7 @@ func (containerProvider *ProviderContainer) updateStateMetric(resultWrapper *Scr
 	if ctr.State != "running" {
 		metric.PushFailure("container isn't running (%v)", ctr.State)
 	} else {
-		metric.PushOK()
+		metric.PushOK("")
 	}
 }
 
@@ -64,7 +64,7 @@ func (containerProvider *ProviderContainer) updateRestartCountMetric(resultWrapp
 	if lastRestartCount != inspect.RestartCount && inspect.RestartCount > 0 {
 		metric.PushFailure("container is restarting (%v, %v)", inspect.RestartCount, ctr.Status)
 	} else {
-		metric.PushOK()
+		metric.PushOK("")
 	}
 }
 
@@ -78,7 +78,7 @@ func (containerProvider *ProviderContainer) GetUpdateTaskList(ctx context.Contex
 				metricListContainer.PushFailure("failed to list containers")
 				return
 			} else {
-				metricListContainer.PushOK()
+				metricListContainer.PushOK("")
 			}
 
 			var inspectErrorList []error
@@ -100,7 +100,7 @@ func (containerProvider *ProviderContainer) GetUpdateTaskList(ctx context.Contex
 			if len(inspectErrorList) > 0 {
 				metricInspectContainer.PushFailure("unable to inspect containers: %v", inspectErrorList)
 			} else {
-				metricInspectContainer.PushOK()
+				metricInspectContainer.PushOK("")
 			}
 		},
 	}
