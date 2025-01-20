@@ -7,7 +7,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/docker/docker v27.4.1+incompatible
 	github.com/dustin/go-humanize v1.0.1
-	github.com/goccy/go-yaml v1.15.13
+	github.com/goccy/go-yaml v1.15.15
 	github.com/moby/sys/mountinfo v0.7.2
 	golang.org/x/sys v0.29.0
 	gotest.tools/v3 v3.5.1
