@@ -29,11 +29,6 @@ Pre-built images are available on github packages:
 
 For automatic updates ([watchtower](https://github.com/containrrr/watchtower), [podman-auto-update](https://docs.podman.io/en/latest/markdown/podman-auto-update.1.html)...), using the lastest major tag available (`ghcr.io/mcarbonne/minimal-server-monitoring:2`) is recommanded to avoid breaking changes.
 
-## Changelog
-
-See [here](CHANGELOG.md).
-
-
 ## Minimal configuration
 ### Default config.yml: container, services and available disk space monitoring, with shoutrrr alerts
 ```
