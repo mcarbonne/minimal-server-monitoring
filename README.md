@@ -69,8 +69,14 @@ docker run \
 |cache|string (path)|yes|-|
 |alert.unhealthy_threshold|uint|no|1|
 |alert.healthy_threshold|uint|no|1|
-|alert.grouping.window|duration|no|15s|
+|alert.failure_reminder|duration <sup>[*](#type-parsing)</sup>|no|2h|
+|alert.grouping.window|duration <sup>[*](#type-parsing)</sup>|no|15s|
 |scrapers|map of [scrapers](#scrapper-configuration)|yes|-|
+
+### Type Parsing
+#### Duration
+String with unit. See [here](https://pkg.go.dev/time#ParseDuration) for details.
+
 
 ### notifier configuration
 |key|type|required|default value|
@@ -91,7 +97,7 @@ docker run \
 |key|type|required|default value|
 |-----|-----------|--------|-------------|
 |type|enum ([systemd](#systemd), [container](#container), [filesystemusage](#filesystemusage), [ping](#ping))|yes|-|
-|scrape_interval|duration (string with unit). See [here](https://pkg.go.dev/time#ParseDuration) for details.|no|120s|
+|scrape_interval|duration <sup>[*](#type-parsing)</sup>|no|120s|
 |params|map, see below|no|{}|
 
 #### systemd
@@ -120,7 +126,7 @@ docker run \
 |mountpoint_whitelist|list of mountpoints to monitor. **When set, `fstypes` and `mountpoint_blacklist` are ignored and autodiscovery is skipped**|no|[]|
 |threshold|minimum threshold of available disk space<sup>1</sup>|no|20%|
 |rate_threshold|rate threshold over rate_threshold_window period<sup>1,2</sup>|no|1g|
-|rate_threshold_window|window duration<sup>2</sup>|no|5m|
+|rate_threshold_window|window duration<sup>2</sup>|no|5m[*](#type-parsing)|
 
 1. thresholds might either be relative (20%) or absolute (50m, 20gb ...). Absolute parsing is done using `ParseBytes` from [go-humanize](https://github.com/dustin/go-humanize), supported prefix list is available [here](https://github.com/dustin/go-humanize/blob/master/bytes.go).
 2. rate threshold triggers an alert when remaining disk space changes by more than `rate_threshold` over `rate_threshold_window` (both increase and decrease).
