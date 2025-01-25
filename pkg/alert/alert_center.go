@@ -47,6 +47,6 @@ func AlertCenter(ctx context.Context, alertCfg Config, scrapResultChan <-chan an
 
 	//Step 3: group messages
 	go func() {
-		MakeAndRunAlertGrouping(filteredNotifications, notifyChan)
+		MakeAndRunAlertGrouping(alertCfg.Grouping, filteredNotifications, notifyChan)
 	}()
 }

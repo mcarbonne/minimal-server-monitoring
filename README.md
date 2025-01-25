@@ -69,6 +69,7 @@ docker run \
 |cache|string (path)|yes|-|
 |alert.unhealthy_threshold|uint|no|1|
 |alert.healthy_threshold|uint|no|1|
+|alert.grouping.window|duration|no|15s|
 |scrapers|map of [scrapers](#scrapper-configuration)|yes|-|
 
 ### notifier configuration
