@@ -58,7 +58,7 @@ func (msm *MetricStateMachine) Update(metricState provider.MetricState) *notifie
 		if msm.oppositeInARow >= msm.healthyThreshold {
 			msm.isHealthy = true
 			msg = makeMessage(notifier.Recovery, "recovered", metricState.Name, metricState.Description)
-		} else if time.Now().Sub(msm.lastFailureMessage) >= msm.failureReminder {
+		} else if time.Since(msm.lastFailureMessage) >= msm.failureReminder {
 			msm.lastFailureMessage = time.Now()
 			msg = makeMessage(notifier.Failure, "failed (reminder)", metricState.Name, metricState.Description)
 		}
