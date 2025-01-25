@@ -5,22 +5,21 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/storage"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/containerapi"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/containerapi/errdef"
 )
 
 type ProviderContainer struct {
-	client *client.Client
+	client *containerapi.Client
 
 	containerRestartCount map[string]int
 	containerState        map[string]string
 }
 
 func NewProviderContainer() (Provider, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := containerapi.NewClient()
 	if err != nil {
 		return nil, err
 	}
@@ -31,11 +30,11 @@ func NewProviderContainer() (Provider, error) {
 	}, nil
 }
 
-func containerPrettyName(ctr types.Container) string {
+func containerPrettyName(ctr containerapi.Container) string {
 	return strings.Join(ctr.Names, ", ") + "@container (" + ctr.Image + ")"
 }
 
-func (containerProvider *ProviderContainer) updateStateMetric(resultWrapper *ScrapeResultWrapper, ctr types.Container) {
+func (containerProvider *ProviderContainer) updateStateMetric(resultWrapper *ScrapeResultWrapper, ctr containerapi.Container) {
 	metric := resultWrapper.Metric("container_state_"+ctr.ID, containerPrettyName(ctr)+" state")
 	containerProvider.containerState[ctr.ID] = ctr.State
 	if ctr.State != "running" {
@@ -45,7 +44,7 @@ func (containerProvider *ProviderContainer) updateStateMetric(resultWrapper *Scr
 	}
 }
 
-func (containerProvider *ProviderContainer) updateImageMetric(resultWrapper *ScrapeResultWrapper, storage storage.Storager, ctr types.Container) {
+func (containerProvider *ProviderContainer) updateImageMetric(resultWrapper *ScrapeResultWrapper, storage storage.Storager, ctr containerapi.Container) {
 	imageKey := fmt.Sprintf("container/%v/image_id", ctr.Names)
 	metric := resultWrapper.Metric("container_image_update_"+ctr.ID, containerPrettyName(ctr)+" image update")
 
@@ -56,7 +55,7 @@ func (containerProvider *ProviderContainer) updateImageMetric(resultWrapper *Scr
 	}
 }
 
-func (containerProvider *ProviderContainer) updateRestartCountMetric(resultWrapper *ScrapeResultWrapper, ctr types.Container, inspect types.ContainerJSON) {
+func (containerProvider *ProviderContainer) updateRestartCountMetric(resultWrapper *ScrapeResultWrapper, ctr containerapi.Container, inspect containerapi.ContainerInspect) {
 	metric := resultWrapper.Metric("container_restarted_"+ctr.ID, containerPrettyName(ctr)+" restart")
 
 	lastRestartCount := containerProvider.containerRestartCount[ctr.ID]
@@ -71,7 +70,7 @@ func (containerProvider *ProviderContainer) updateRestartCountMetric(resultWrapp
 func (containerProvider *ProviderContainer) GetUpdateTaskList(ctx context.Context, resultWrapper *ScrapeResultWrapper, storage storage.Storager) UpdateTaskList {
 	return UpdateTaskList{
 		func() {
-			containers, err := containerProvider.client.ContainerList(ctx, container.ListOptions{})
+			containers, err := containerProvider.client.ContainerList(ctx)
 
 			metricListContainer := resultWrapper.Metric("general_list_container", "container provider")
 			if err != nil {
@@ -89,7 +88,7 @@ func (containerProvider *ProviderContainer) GetUpdateTaskList(ctx context.Contex
 				inspect, err := containerProvider.client.ContainerInspect(ctx, ctr.ID)
 				if err == nil {
 					containerProvider.updateRestartCountMetric(resultWrapper, ctr, inspect)
-				} else if client.IsErrNotFound(err) {
+				} else if errdef.IsErrNotFound(err) {
 					logging.Info("Container %v does not exist anymore, ignoring", ctr.ID)
 				} else {
 					inspectErrorList = append(inspectErrorList, err)
