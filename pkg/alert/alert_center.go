@@ -25,7 +25,7 @@ func AlertCenter(ctx context.Context, alertCfg Config, scrapResultChan <-chan an
 				}
 			case provider.MetricState:
 				if metricStateMachines[element.MetricID] == nil {
-					metricStateMachines[element.MetricID] = MakeMetricStateMachine(alertCfg.HealthyThreshold, alertCfg.UnhealthyThreshold)
+					metricStateMachines[element.MetricID] = MakeMetricStateMachine(alertCfg.HealthyThreshold, alertCfg.UnhealthyThreshold, alertCfg.FailureReminder)
 				}
 				optMessage := metricStateMachines[element.MetricID].Update(element)
 
@@ -47,6 +47,6 @@ func AlertCenter(ctx context.Context, alertCfg Config, scrapResultChan <-chan an
 
 	//Step 3: group messages
 	go func() {
-		MakeAndRunAlertGrouping(filteredNotifications, notifyChan)
+		MakeAndRunAlertGrouping(alertCfg.Grouping, filteredNotifications, notifyChan)
 	}()
 }

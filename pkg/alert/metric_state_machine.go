@@ -1,6 +1,8 @@
 package alert
 
 import (
+	"time"
+
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/notifier"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/scraping/provider"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
@@ -12,14 +14,27 @@ type MetricStateMachine struct {
 
 	isHealthy      bool
 	oppositeInARow uint
+
+	failureReminder    time.Duration
+	lastFailureMessage time.Time
 }
 
-func MakeMetricStateMachine(healthyThreshold, unhealthyThreshold uint) *MetricStateMachine {
+func MakeMetricStateMachine(healthyThreshold, unhealthyThreshold uint, failureReminderDelay time.Duration) *MetricStateMachine {
 	return &MetricStateMachine{
 		healthyThreshold:   healthyThreshold,
 		unhealthyThreshold: unhealthyThreshold,
 		isHealthy:          true,
 		oppositeInARow:     0,
+		failureReminder:    failureReminderDelay,
+		lastFailureMessage: time.Time{},
+	}
+}
+
+func makeMessage(msgType notifier.MessageType, what, name, description string) *notifier.Message {
+	if description == "" {
+		return utils.Ptr(notifier.MakeMessage(msgType, "%v %v", name, what))
+	} else {
+		return utils.Ptr(notifier.MakeMessage(msgType, "%v %v: %v", name, what, description))
 	}
 }
 
@@ -36,20 +51,16 @@ func (msm *MetricStateMachine) Update(metricState provider.MetricState) *notifie
 	if msm.isHealthy {
 		if msm.oppositeInARow >= msm.unhealthyThreshold {
 			msm.isHealthy = false
-			if metricState.Description == "" {
-				msg = utils.Ptr(notifier.MakeMessage(notifier.Failure, "%v failed", metricState.Name))
-			} else {
-				msg = utils.Ptr(notifier.MakeMessage(notifier.Failure, "%v failed: %v", metricState.Name, metricState.Description))
-			}
+			msm.lastFailureMessage = time.Now()
+			msg = makeMessage(notifier.Failure, "failed", metricState.Name, metricState.Description)
 		}
 	} else {
 		if msm.oppositeInARow >= msm.healthyThreshold {
 			msm.isHealthy = true
-			if metricState.Description == "" {
-				msg = utils.Ptr(notifier.MakeMessage(notifier.Recovery, "%v recovered", metricState.Name))
-			} else {
-				msg = utils.Ptr(notifier.MakeMessage(notifier.Recovery, "%v recovered: %v", metricState.Name, metricState.Description))
-			}
+			msg = makeMessage(notifier.Recovery, "recovered", metricState.Name, metricState.Description)
+		} else if time.Now().Sub(msm.lastFailureMessage) >= msm.failureReminder {
+			msm.lastFailureMessage = time.Now()
+			msg = makeMessage(notifier.Failure, "failed (reminder)", metricState.Name, metricState.Description)
 		}
 
 	}
