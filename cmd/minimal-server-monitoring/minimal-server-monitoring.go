@@ -68,7 +68,9 @@ func main() {
 		scraping.ScheduleScraping(ctx, cfg.Scrapers, storage, scrapeResultChan)
 	}()
 
-	notifyChan <- makeStartupMessage(&cfg)
+	if cfg.StartupMessage {
+		notifyChan <- makeStartupMessage(&cfg)
+	}
 
 	<-signalChan
 	logging.Info("Exiting...")
