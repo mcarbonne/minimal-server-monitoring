@@ -52,6 +52,10 @@ type testStruct struct {
 	StructNotPresent subStruct         `json:"struct_to_present" default:"{}"`
 	Duration         time.Duration     `json:"duration"`
 	DurationDefault  time.Duration     `json:"duration_d" default:"6s"`
+	BoolT            bool              `json:"bool_t"`
+	BoolF            bool              `json:"bool_f"`
+	BoolDefault1     bool              `json:"bool_d1" default:"true"`
+	BoolDefault2     bool              `json:"bool_d2" default:"true"`
 
 	Custom        utils.RelativeAbsoluteValue `json:"custom" custom:"custom_func"`
 	CustomDefault utils.RelativeAbsoluteValue `json:"custom_d" custom:"custom_func" default:"20%"`
@@ -96,6 +100,11 @@ func check(t *testing.T, data *testStruct) {
 
 	assert.Equal(t, data.Custom.GetValue(100), uint64(5))
 	assert.Equal(t, data.CustomDefault.GetValue(100), uint64(20))
+
+	assert.Equal(t, data.BoolT, true)
+	assert.Equal(t, data.BoolF, false)
+	assert.Equal(t, data.BoolDefault1, true)
+	assert.Equal(t, data.BoolDefault2, false)
 }
 
 func TestMapJsonOnStruct(t *testing.T) {
@@ -116,7 +125,10 @@ func TestMapJsonOnStruct(t *testing.T) {
 	"map_str": {"a":"abc", "b":"def"},
 	"struct": {"int":5},
 	"duration":"5s",
-	"custom":"5%"
+	"custom":"5%",
+	"bool_t": true,
+	"bool_f": false,
+	"bool_d2": false
 	}`
 	err := json.Unmarshal([]byte(myJsonString), &rawJson)
 	assert.NilError(t, err)
@@ -163,6 +175,9 @@ struct:
   int: 5
 duration: 5s
 custom: 5%
+bool_t: true
+bool_f: false
+bool_d2: false
 `
 	err := yaml.Unmarshal([]byte(myYamlString), &rawYaml)
 	assert.NilError(t, err)

@@ -62,6 +62,7 @@ docker run \
 |-----|-----------|--------|-------------|
 |notifiers|map of [notifiers](#notifier-configuration)|yes|-|
 |cache|string (path)|yes|-|
+|startup_message|boolean|false|true|
 |alert.unhealthy_threshold|uint|no|1|
 |alert.healthy_threshold|uint|no|1|
 |alert.failure_reminder|duration <sup>[*](#type-parsing)</sup>|no|2h|
