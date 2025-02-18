@@ -40,6 +40,11 @@ func stringToUint(type_ reflect.Type, valueAsString string) (reflect.Value, erro
 	return defaultValue, nil
 }
 
+func stringToBool(valueAsString string) (reflect.Value, error) {
+	boolVal, err := strconv.ParseBool(valueAsString)
+	return reflect.ValueOf(boolVal), err
+}
+
 func getDefaultValue(ctx *Context, field reflect.StructField) (reflect.Value, error) {
 	if tag, ok := field.Tag.Lookup("default"); ok {
 
@@ -99,6 +104,8 @@ func getDefaultValue(ctx *Context, field reflect.StructField) (reflect.Value, er
 			return stringToUint(field.Type, tag)
 		case reflect.String:
 			return reflect.ValueOf(tag), nil
+		case reflect.Bool:
+			return stringToBool(tag)
 		default:
 			return reflect.Value{}, fmt.Errorf("unsupported kind %v for default", kind)
 		}
@@ -260,6 +267,11 @@ func mapOnString(raw any) (reflect.Value, error) {
 	return reflect.ValueOf(value), nil
 }
 
+func mapOnBool(raw any) (reflect.Value, error) {
+	value, err := getAs[bool](raw)
+	return reflect.ValueOf(value), err
+}
+
 func mapOnAny(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
 	if type_ == reflect.TypeOf(time.Second) {
 		durationAsString, err := getAs[string](raw)
@@ -291,6 +303,8 @@ func mapOnAny(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.
 		return reflect.ValueOf(raw), nil
 	case reflect.Ptr:
 		return mapOnPtr(ctx, type_, raw, level)
+	case reflect.Bool:
+		return mapOnBool(raw)
 	default:
 		return reflect.Value{}, fmt.Errorf("[%v] mapOnAny: unsupported type %v", level, kind)
 	}

@@ -13,11 +13,12 @@ import (
 )
 
 type Config struct {
-	MachineName string                     `json:"machine_name" default:""`
-	Notifiers   map[string]notifier.Config `json:"notifiers"`
-	Alert       alert.Config               `json:"alert" default:"{}"`
-	Scrapers    map[string]provider.Config `json:"scrapers"`
-	CachePath   string                     `json:"cache"`
+	MachineName    string                     `json:"machine_name" default:""`
+	Notifiers      map[string]notifier.Config `json:"notifiers"`
+	Alert          alert.Config               `json:"alert" default:"{}"`
+	Scrapers       map[string]provider.Config `json:"scrapers"`
+	CachePath      string                     `json:"cache"`
+	StartupMessage bool                       `json:"startup_message" default:"true"`
 }
 
 func strictGetEnv(key string) string {
