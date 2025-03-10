@@ -1,6 +1,7 @@
 module github.com/mcarbonne/minimal-server-monitoring/v2
 
 go 1.22.1
+toolchain go1.23.7
 
 require (
 	github.com/containrrr/shoutrrr v0.8.0
@@ -8,7 +9,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/goccy/go-yaml v1.15.23
 	github.com/moby/sys/mountinfo v0.7.2
-	golang.org/x/sys v0.30.0
+	golang.org/x/sys v0.31.0
 	gotest.tools/v3 v3.5.2
 )
 
