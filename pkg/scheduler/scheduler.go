@@ -36,7 +36,7 @@ func (s *Scheduler) Schedule() {
 		}
 
 		now = time.Now()
-		var nextSchedule time.Duration = time.Minute // run at least once every minute
+		var nextSchedule = time.Minute // run at least once every minute
 		for _, m := range s.taskList {
 			nextSchedule = min(nextSchedule, m.NextRun().Sub(now))
 		}
@@ -79,7 +79,7 @@ mainloop:
 		iterationWg.Wait() // This isn't optimal, but required as Tasker interface isn't threadsafe
 
 		now = time.Now()
-		var nextSchedule time.Duration = time.Minute // run at least once every minute
+		var nextSchedule = time.Minute // run at least once every minute
 		for _, m := range s.taskList {
 			nextSchedule = min(nextSchedule, m.NextRun().Sub(now))
 		}

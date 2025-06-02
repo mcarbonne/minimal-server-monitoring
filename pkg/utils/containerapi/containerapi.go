@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/containerapi/errdef"
 )
 
@@ -35,7 +36,7 @@ func (c *Client) ContainerList(ctx context.Context) ([]Container, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	if resp.StatusCode != 200 {
 		return nil, errors.New("failed to list containers")
@@ -53,7 +54,7 @@ func (c *Client) ContainerInspect(ctx context.Context, containerId string) (Cont
 	if err != nil {
 		return ContainerInspect{}, err
 	}
-	defer resp.Body.Close()
+	defer utils.SafeClose(resp.Body)
 
 	if resp.StatusCode == 404 {
 		return ContainerInspect{}, errdef.ErrorNotFound(fmt.Errorf("container [%v] not found", containerId))

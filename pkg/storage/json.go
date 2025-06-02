@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 )
 
 type JsonStorageFile struct {
@@ -26,7 +27,7 @@ func NewJSONStorage(jsonPath string) Storager {
 		logging.Warning("Unable to load configuration: %v", err)
 		return js
 	} else {
-		defer storageFile.Close()
+		defer utils.SafeClose(storageFile)
 	}
 
 	jsonParser := json.NewDecoder(storageFile)
@@ -55,7 +56,7 @@ func (js *JSONStorage) Sync(force bool) {
 		if err != nil {
 			logging.Fatal("Unable to open: %v", err.Error())
 		} else {
-			defer storageFile.Close()
+			defer utils.SafeClose(storageFile)
 		}
 		encoder := json.NewEncoder(storageFile)
 		encoder.SetIndent("", " ")
@@ -64,5 +65,5 @@ func (js *JSONStorage) Sync(force bool) {
 			logging.Fatal("Unable to encode: %v", err.Error())
 		}
 	}
-	js.MemoryStorage.syncUnsafe(force)
+	js.syncUnsafe(force)
 }
