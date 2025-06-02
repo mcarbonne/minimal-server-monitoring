@@ -16,7 +16,7 @@ test:
 	go test ./...
 	
 lint:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.1.6
 	golangci-lint run ./...
 
 generate:
