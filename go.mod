@@ -10,7 +10,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/goccy/go-yaml v1.18.0
 	github.com/moby/sys/mountinfo v0.7.2
-	golang.org/x/sys v0.34.0
+	golang.org/x/sys v0.35.0
 	gotest.tools/v3 v3.5.2
 )
 
