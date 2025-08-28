@@ -6,7 +6,7 @@ toolchain go1.23.5
 
 require (
 	github.com/containrrr/shoutrrr v0.8.0
-	github.com/coreos/go-systemd/v22 v22.5.0
+	github.com/coreos/go-systemd/v22 v22.6.0
 	github.com/dustin/go-humanize v1.0.1
 	github.com/goccy/go-yaml v1.18.0
 	github.com/moby/sys/mountinfo v0.7.2
