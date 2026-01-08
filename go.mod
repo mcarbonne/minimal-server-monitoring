@@ -1,21 +1,21 @@
 module github.com/mcarbonne/minimal-server-monitoring/v2
 
-go 1.24.0
+go 1.25.5
 
 require (
 	github.com/containrrr/shoutrrr v0.8.0
 	github.com/coreos/go-systemd/v22 v22.6.0
 	github.com/dustin/go-humanize v1.0.1
-	github.com/goccy/go-yaml v1.19.0
+	github.com/goccy/go-yaml v1.19.2
 	github.com/moby/sys/mountinfo v0.7.2
-	golang.org/x/sys v0.38.0
+	golang.org/x/sys v0.40.0
 	gotest.tools/v3 v3.5.2
 )
 
 require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
-	github.com/godbus/dbus/v5 v5.1.0 // indirect
+	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
