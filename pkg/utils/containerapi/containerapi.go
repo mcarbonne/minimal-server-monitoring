@@ -32,6 +32,7 @@ func NewClient() (*Client, error) {
 }
 
 func (c *Client) ContainerList(ctx context.Context) ([]Container, error) {
+	//nolint:bodyclose // SafeClose instead of Close
 	resp, err := c.http.Get("http://localhost/containers/json")
 	if err != nil {
 		return nil, err
@@ -50,6 +51,7 @@ func (c *Client) ContainerList(ctx context.Context) ([]Container, error) {
 }
 
 func (c *Client) ContainerInspect(ctx context.Context, containerId string) (ContainerInspect, error) {
+	//nolint:bodyclose // SafeClose instead of Close
 	resp, err := c.http.Get("http://localhost/containers/" + containerId + "/json")
 	if err != nil {
 		return ContainerInspect{}, err
