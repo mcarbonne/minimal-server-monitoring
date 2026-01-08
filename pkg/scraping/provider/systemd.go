@@ -23,9 +23,8 @@ func NewProviderSystemd(ctx context.Context, params map[string]any) (Provider, e
 	return &cfg, err
 }
 
-func listServiceUnits(ctx context.Context, systemdConn *dbus.Conn) []dbus.UnitStatus {
-	listOfUnits, _ := systemdConn.ListUnitsByPatternsContext(ctx, []string{}, []string{"*.service"})
-	return listOfUnits
+func listServiceUnits(ctx context.Context, systemdConn *dbus.Conn) ([]dbus.UnitStatus, error) {
+	return systemdConn.ListUnitsByPatternsContext(ctx, []string{}, []string{"*.service"})
 }
 
 func extractPodmanHealthCheckPrettyName(unit dbus.UnitStatus) *string {
@@ -52,7 +51,14 @@ func getServicePrettyName(unit dbus.UnitStatus) string {
 func (systemdProvider *ProviderSystemd) GetUpdateTaskList(ctx context.Context, resultWrapper *ScrapeResultWrapper, storage storage.Storager) UpdateTaskList {
 	return UpdateTaskList{
 		func() {
-			listOfUnits := listServiceUnits(ctx, systemdProvider.systemdConn)
+			metricListServices := resultWrapper.Metric("list_services", "list services")
+			listOfUnits, err := listServiceUnits(ctx, systemdProvider.systemdConn)
+			if err != nil {
+				metricListServices.PushFailure("failed to list services: %v", err)
+				return
+			} else {
+				metricListServices.PushOK("")
+			}
 
 			for _, unit := range listOfUnits {
 				prettyName := getServicePrettyName(unit)

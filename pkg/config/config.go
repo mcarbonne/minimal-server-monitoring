@@ -52,7 +52,10 @@ func LoadConfiguration(configPath string) Config {
 	}
 
 	if config.MachineName == "" {
-		config.MachineName, _ = os.Hostname()
+		config.MachineName, err = os.Hostname()
+		if err != nil {
+			logging.Fatal("Failed to read hostname: %v", err)
+		}
 	}
 
 	return config

@@ -74,7 +74,7 @@ func (containerProvider *ProviderContainer) GetUpdateTaskList(ctx context.Contex
 
 			metricListContainer := resultWrapper.Metric("general_list_container", "container provider")
 			if err != nil {
-				metricListContainer.PushFailure("failed to list containers")
+				metricListContainer.PushFailure("failed to list containers: %v", err)
 				return
 			} else {
 				metricListContainer.PushOK("")
