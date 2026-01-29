@@ -6,13 +6,23 @@ import (
 	"regexp"
 
 	"github.com/coreos/go-systemd/v22/dbus"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/storage"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper"
 )
 
+const NB_RETRIES = 3
+
 type ProviderSystemd struct {
 	systemdConn *dbus.Conn
+}
+
+func (provider *ProviderSystemd) reset(ctx context.Context) error {
+	var err error
+	provider.systemdConn.Close()
+	provider.systemdConn, err = dbus.NewSystemdConnectionContext(ctx)
+	return err
 }
 
 func NewProviderSystemd(ctx context.Context, params map[string]any) (Provider, error) {
@@ -23,8 +33,18 @@ func NewProviderSystemd(ctx context.Context, params map[string]any) (Provider, e
 	return &cfg, err
 }
 
-func listServiceUnits(ctx context.Context, systemdConn *dbus.Conn) ([]dbus.UnitStatus, error) {
-	return systemdConn.ListUnitsByPatternsContext(ctx, []string{}, []string{"*.service"})
+func (provider *ProviderSystemd) listServiceUnits(ctx context.Context) ([]dbus.UnitStatus, error) {
+	result, err := provider.systemdConn.ListUnitsByPatternsContext(ctx, []string{}, []string{"*.service"})
+	for i := 0; i < NB_RETRIES && err != nil; i++ {
+		logging.Warning("resetting dbus connection (%v)", err)
+		err = provider.reset(ctx)
+		if err != nil {
+			logging.Warning("reset failed: %v", err)
+		}
+
+		result, err = provider.systemdConn.ListUnitsByPatternsContext(ctx, []string{}, []string{"*.service"})
+	}
+	return result, err
 }
 
 func extractPodmanHealthCheckPrettyName(unit dbus.UnitStatus) *string {
@@ -52,7 +72,7 @@ func (systemdProvider *ProviderSystemd) GetUpdateTaskList(ctx context.Context, r
 	return UpdateTaskList{
 		func() {
 			metricListServices := resultWrapper.Metric("list_services", "list services")
-			listOfUnits, err := listServiceUnits(ctx, systemdProvider.systemdConn)
+			listOfUnits, err := systemdProvider.listServiceUnits(ctx)
 			if err != nil {
 				metricListServices.PushFailure("failed to list services: %v", err)
 				return
