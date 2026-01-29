@@ -28,3 +28,9 @@ func (shoutrrr *Shoutrrr) Send(message Message) error {
 	params := types.Params{"title": message.Title}
 	return shoutrrr.router.Send(message.Message, &params)[0]
 }
+
+func init() {
+	RegisterNotifier("shoutrrr", func(cfg Config) (Notifier, error) {
+		return NewShoutrrr(cfg.Params)
+	})
+}

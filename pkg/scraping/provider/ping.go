@@ -63,3 +63,8 @@ func (pingProvider *ProviderPing) MultipleInstanceAllowed() bool {
 
 func (*ProviderPing) Destroy() {
 }
+func init() {
+	RegisterProvider("ping", func(ctx context.Context, cfg Config) (Provider, error) {
+		return NewProviderPing(cfg.Params)
+	})
+}

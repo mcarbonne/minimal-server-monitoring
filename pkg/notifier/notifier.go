@@ -2,7 +2,6 @@ package notifier
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
@@ -13,14 +12,11 @@ type Notifier interface {
 }
 
 func LoadNotifierFromConfig(cfg Config) (Notifier, error) {
-	switch cfg.Type {
-	case "shoutrrr":
-		return NewShoutrrr(cfg.Params)
-	case "console":
-		return NewConsoleNotifier(), nil
-	default:
-		return nil, fmt.Errorf("illegal notifier type: %v", cfg.Type)
+	factory, err := GetNotifier(cfg.Type)
+	if err != nil {
+		return nil, err
 	}
+	return factory(cfg)
 }
 
 func LoadAndRunNotifiers(ctx context.Context, machineName string, notifierCfgList map[string]Config, messageChan <-chan Message) {
@@ -28,11 +24,13 @@ func LoadAndRunNotifiers(ctx context.Context, machineName string, notifierCfgLis
 	var err error
 	for notifierName, notifierCfg := range notifierCfgList {
 		if !utils.IsNameValid(notifierName) {
-			logging.Fatal("Unable to setup notifier: forbidden characters in name '%v'", notifierName)
+			logging.Error("Unable to setup notifier: forbidden characters in name '%v'", notifierName)
+			continue
 		}
 		notifierList[notifierName], err = LoadNotifierFromConfig(notifierCfg)
 		if err != nil {
-			logging.Fatal("Unable to load notifier: %v", err)
+			logging.Error("Unable to load notifier: %v", err)
+			continue
 		}
 	}
 

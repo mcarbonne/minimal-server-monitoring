@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -13,16 +12,9 @@ type Config struct {
 }
 
 func LoadProviderFromConfig(ctx context.Context, cfg Config) (Provider, error) {
-	switch cfg.Type {
-	case "container":
-		return NewProviderContainer()
-	case "ping":
-		return NewProviderPing(cfg.Params)
-	case "systemd":
-		return NewProviderSystemd(ctx, cfg.Params)
-	case "filesystemusage":
-		return NewProviderFileSystemUsage(cfg.Params, cfg.ScrapeInterval)
-	default:
-		return nil, fmt.Errorf("illegal provider type: %v", cfg.Type)
+	factory, err := GetProvider(cfg.Type)
+	if err != nil {
+		return nil, err
 	}
+	return factory(ctx, cfg)
 }

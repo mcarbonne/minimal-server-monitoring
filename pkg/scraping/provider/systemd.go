@@ -80,3 +80,9 @@ func (*ProviderSystemd) MultipleInstanceAllowed() bool {
 func (systemdProvider *ProviderSystemd) Destroy() {
 	systemdProvider.systemdConn.Close()
 }
+
+func init() {
+	RegisterProvider("systemd", func(ctx context.Context, cfg Config) (Provider, error) {
+		return NewProviderSystemd(ctx, cfg.Params)
+	})
+}

@@ -111,3 +111,8 @@ func (containerProvider *ProviderContainer) MultipleInstanceAllowed() bool {
 
 func (*ProviderContainer) Destroy() {
 }
+func init() {
+	RegisterProvider("container", func(ctx context.Context, cfg Config) (Provider, error) {
+		return NewProviderContainer()
+	})
+}
