@@ -166,3 +166,9 @@ func (*ProviderFileSystemUsage) MultipleInstanceAllowed() bool {
 
 func (*ProviderFileSystemUsage) Destroy() {
 }
+
+func init() {
+	RegisterProvider("filesystemusage", func(ctx context.Context, cfg Config) (Provider, error) {
+		return NewProviderFileSystemUsage(cfg.Params, cfg.ScrapeInterval)
+	})
+}

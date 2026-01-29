@@ -15,3 +15,9 @@ func (l *ConsoleNotifier) Send(message Message) error {
 	logging.Info("New message:\nTitle: [%v]\nMessage: %v", message.Title, message.Message)
 	return nil
 }
+
+func init() {
+	RegisterNotifier("console", func(cfg Config) (Notifier, error) {
+		return NewConsoleNotifier(), nil
+	})
+}
