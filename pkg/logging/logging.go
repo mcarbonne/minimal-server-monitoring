@@ -6,15 +6,23 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
+	"sync"
 )
+
+type ErrorHook struct {
+	fn    func(string)
+	mutex sync.RWMutex
+}
 
 var (
 	defaultLogger = log.New(os.Stdout, "", log.Ldate|log.Lmicroseconds|log.Lmsgprefix)
-	errorHook     func(string)
+	errorHook     ErrorHook
 )
 
 func SetErrorHook(hook func(string)) {
-	errorHook = hook
+	errorHook.mutex.Lock()
+	defer errorHook.mutex.Unlock()
+	errorHook.fn = hook
 }
 
 func Log(level, format string, args ...any) {
@@ -48,8 +56,10 @@ func Warning(format string, args ...any) {
 func Error(format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	Log("ERROR", "%s", msg)
-	if errorHook != nil {
-		errorHook(msg)
+	errorHook.mutex.RLock()
+	defer errorHook.mutex.RUnlock()
+	if errorHook.fn != nil {
+		errorHook.fn(msg)
 	}
 }
 
