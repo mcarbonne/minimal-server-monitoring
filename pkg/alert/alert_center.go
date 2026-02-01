@@ -2,6 +2,7 @@ package alert
 
 import (
 	"context"
+	"time"
 
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/notifier"
@@ -25,9 +26,9 @@ func AlertCenter(ctx context.Context, alertCfg Config, scrapResultChan <-chan an
 				}
 			case provider.MetricState:
 				if metricStateMachines[element.MetricID] == nil {
-					metricStateMachines[element.MetricID] = MakeMetricStateMachine(alertCfg.HealthyThreshold, alertCfg.UnhealthyThreshold, alertCfg.FailureReminder)
+					metricStateMachines[element.MetricID] = MakeMetricStateMachine(alertCfg.HealthyThreshold, alertCfg.UnhealthyThreshold, alertCfg.FailureReminder.AsDuration(), alertCfg.FailureReminderCount, alertCfg.DailyReminderTime)
 				}
-				optMessage := metricStateMachines[element.MetricID].Update(element)
+				optMessage := metricStateMachines[element.MetricID].Update(element, time.Now())
 
 				if optMessage != nil {
 					outputChan <- metricIdWithMsg{

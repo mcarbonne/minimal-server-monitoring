@@ -9,6 +9,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper/customtypes"
 	"gotest.tools/v3/assert"
 )
 
@@ -39,23 +40,25 @@ type testStruct struct {
 	Uint64        uint64 `json:"uint64"`
 	Uint64Default uint64 `json:"uint64_d" default:"13"`
 
-	Str              string            `json:"str"`
-	StrDefault       string            `json:"str_d" default:"default_str"`
-	OptStr           *string           `json:"opt_str"`
-	OptStrNoValue    *string           `json:"opt_str_no_value"`
-	Slice            []int             `json:"slice_int"`
-	SliceEmpty       []int             `json:"slice_int_empty" default:"[]"`
-	SliceDefault     []int             `json:"slice_int_default" default:"[1,2,43]"`
-	Map              map[string]string `json:"map_str"`
-	MapEmpty         map[string]string `json:"map_str_empty" default:"{}"`
-	Struct           subStruct         `json:"struct"`
-	StructNotPresent subStruct         `json:"struct_to_present" default:"{}"`
-	Duration         time.Duration     `json:"duration"`
-	DurationDefault  time.Duration     `json:"duration_d" default:"6s"`
-	BoolT            bool              `json:"bool_t"`
-	BoolF            bool              `json:"bool_f"`
-	BoolDefault1     bool              `json:"bool_d1" default:"true"`
-	BoolDefault2     bool              `json:"bool_d2" default:"true"`
+	Str              string                `json:"str"`
+	StrDefault       string                `json:"str_d" default:"default_str"`
+	OptStr           *string               `json:"opt_str"`
+	OptStrNoValue    *string               `json:"opt_str_no_value"`
+	Slice            []int                 `json:"slice_int"`
+	SliceEmpty       []int                 `json:"slice_int_empty" default:"[]"`
+	SliceDefault     []int                 `json:"slice_int_default" default:"[1,2,43]"`
+	Map              map[string]string     `json:"map_str"`
+	MapEmpty         map[string]string     `json:"map_str_empty" default:"{}"`
+	Struct           subStruct             `json:"struct"`
+	StructNotPresent subStruct             `json:"struct_to_present" default:"{}"`
+	Duration         customtypes.Duration  `json:"duration"`
+	DurationDefault  customtypes.Duration  `json:"duration_d" default:"6s"`
+	TimeOfDay        customtypes.TimeOfDay `json:"timeofday"`
+	TimeOfDayDefault customtypes.TimeOfDay `json:"timeofday_d" default:"16:34"`
+	BoolT            bool                  `json:"bool_t"`
+	BoolF            bool                  `json:"bool_f"`
+	BoolDefault1     bool                  `json:"bool_d1" default:"true"`
+	BoolDefault2     bool                  `json:"bool_d2" default:"true"`
 
 	Custom        utils.RelativeAbsoluteValue `json:"custom" custom:"custom_func"`
 	CustomDefault utils.RelativeAbsoluteValue `json:"custom_d" custom:"custom_func" default:"20%"`
@@ -95,8 +98,11 @@ func check(t *testing.T, data *testStruct) {
 	assert.DeepEqual(t, data.MapEmpty, map[string]string{})
 	assert.DeepEqual(t, data.Struct, subStruct{Int: 5})
 
-	assert.Equal(t, data.Duration, time.Second*5)
-	assert.Equal(t, data.DurationDefault, time.Second*6)
+	assert.Equal(t, data.Duration.AsDuration(), time.Second*5)
+	assert.Equal(t, data.DurationDefault.AsDuration(), time.Second*6)
+
+	assert.Equal(t, data.TimeOfDay, customtypes.TimeOfDay{Hour: 16, Minute: 36})
+	assert.Equal(t, data.TimeOfDayDefault, customtypes.TimeOfDay{Hour: 16, Minute: 34})
 
 	assert.Equal(t, data.Custom.GetValue(100), uint64(5))
 	assert.Equal(t, data.CustomDefault.GetValue(100), uint64(20))
@@ -125,6 +131,7 @@ func TestMapJsonOnStruct(t *testing.T) {
 	"map_str": {"a":"abc", "b":"def"},
 	"struct": {"int":5},
 	"duration":"5s",
+	"timeofday":"16:36",
 	"custom":"5%",
 	"bool_t": true,
 	"bool_f": false,
@@ -133,7 +140,7 @@ func TestMapJsonOnStruct(t *testing.T) {
 	err := json.Unmarshal([]byte(myJsonString), &rawJson)
 	assert.NilError(t, err)
 	ctx := configmapper.MakeContext()
-	err = ctx.RegisterCustomParser("custom_func", func(s string) (reflect.Value, error) {
+	err = ctx.RegisterCustomFieldParser("custom_func", func(s string) (reflect.Value, error) {
 		value, err := utils.RelativeAbsoluteValueFromString(s)
 		if err != nil {
 			return reflect.Value{}, err
@@ -174,6 +181,7 @@ map_str:
 struct:
   int: 5
 duration: 5s
+timeofday: 16:36
 custom: 5%
 bool_t: true
 bool_f: false
@@ -182,7 +190,7 @@ bool_d2: false
 	err := yaml.Unmarshal([]byte(myYamlString), &rawYaml)
 	assert.NilError(t, err)
 	ctx := configmapper.MakeContext()
-	err = ctx.RegisterCustomParser("custom_func", func(s string) (reflect.Value, error) {
+	err = ctx.RegisterCustomFieldParser("custom_func", func(s string) (reflect.Value, error) {
 		value, err := utils.RelativeAbsoluteValueFromString(s)
 		if err != nil {
 			return reflect.Value{}, err

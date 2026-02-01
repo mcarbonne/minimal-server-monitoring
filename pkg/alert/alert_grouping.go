@@ -11,7 +11,7 @@ const maxAggregatedMessages int = 10
 
 func MakeAndRunAlertGrouping(cfg GroupingConfig, input <-chan notifier.Message, output chan<- notifier.Message) {
 	currentGroup := make([]notifier.Message, 0, maxAggregatedMessages)
-	nextDeadline := time.Now().Add(cfg.Window)
+	nextDeadline := time.Now().Add(cfg.Window.AsDuration())
 
 	sendAndFlush := func() {
 		logging.Info("Sending a grouped message of size %v", len(currentGroup))
@@ -23,14 +23,14 @@ func MakeAndRunAlertGrouping(cfg GroupingConfig, input <-chan notifier.Message, 
 		select {
 		case msg := <-input:
 			if len(currentGroup) == 0 {
-				nextDeadline = time.Now().Add(cfg.Window)
+				nextDeadline = time.Now().Add(cfg.Window.AsDuration())
 			}
 			currentGroup = append(currentGroup, msg)
 		case <-time.After(time.Until(nextDeadline)):
 			if len(currentGroup) > 0 {
 				sendAndFlush()
 			} else {
-				nextDeadline = time.Now().Add(cfg.Window)
+				nextDeadline = time.Now().Add(cfg.Window.AsDuration())
 			}
 		}
 

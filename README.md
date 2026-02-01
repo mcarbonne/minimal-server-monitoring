@@ -2,7 +2,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Tag](https://img.shields.io/github/v/tag/mcarbonne/minimal-server-monitoring)](https://github.com/mcarbonne/minimal-server-monitoring/tags)
 [![Stars](https://img.shields.io/github/stars/mcarbonne/minimal-server-monitoring.svg)](https://github.com/mcarbonne/minimal-server-monitoring)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mcarbonne/minimal-server-monitoring)](https://goreportcard.com/report/github.com/mcarbonne/minimal-server-monitoring)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mcarbonne/minimal-server-monitoring/v2)](https://goreportcard.com/report/github.com/mcarbonne/minimal-server-monitoring/v2)
 
 This tool lets you monitor a typical home server running applications in containers and receive alerts on your smartphone. It is designed to be light and simple (no database, no GUI, a single configuration file).
 
@@ -66,6 +66,8 @@ docker run \
 |alert.unhealthy_threshold|uint|no|1|
 |alert.healthy_threshold|uint|no|1|
 |alert.failure_reminder|duration <sup>[*](#type-parsing)</sup>|no|2h|
+|alert.failure_reminder_count|uint|no|3|
+|alert.daily_reminder_time|time of day (HH:MM)|no|08:00|
 |alert.grouping.window|duration <sup>[*](#type-parsing)</sup>|no|15s|
 |scrapers|map of [scrapers](#scrapper-configuration)|yes|-|
 
@@ -150,6 +152,9 @@ cache: /tmp/cache.json
 alert:
   unhealthy_threshold: 1
   healthy_threshold: 1
+  failure_reminder: 2h
+  failure_reminder_count: 3
+  daily_reminder_time: "08:00"
 scrapers:
   docker:
     type: container
@@ -241,6 +246,11 @@ If a state is marked as failed `unhealthy_threshold` time in a row, a notificati
 If a state is marked as OK `healthy_threshold` time in a row, a notification is sent (metric XX OK).
 
 Messages are forwared as notifications (no processing at this step).
+
+#### Reminders
+If a metric stays unhealthy, reminders are sent:
+- Initially, `failure_reminder_count` are sent at intervals of `failure_reminder`.
+- Then, a daily reminder is sent at `daily_reminder_time`.
 
 #### Filtering
 Avoid sending too many notifications for a given `metricId`.

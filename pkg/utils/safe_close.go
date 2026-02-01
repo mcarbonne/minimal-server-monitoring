@@ -1,9 +1,11 @@
 package utils
 
-import "fmt"
+import (
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
+)
 
 func SafeClose(closer interface{ Close() error }) {
 	if err := closer.Close(); err != nil {
-		panic(fmt.Errorf("failed to close file: %v", err))
+		logging.Error("failed to close file: %v", err)
 	}
 }

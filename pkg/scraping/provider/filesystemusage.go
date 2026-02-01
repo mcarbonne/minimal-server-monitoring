@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -13,10 +14,13 @@ import (
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/storage"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper"
+	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper/customtypes"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/stats"
 	"github.com/moby/sys/mountinfo"
 	"golang.org/x/sys/unix"
 )
+
+var ErrInvalidRateThresholdWindow = errors.New("rate_threshold_window must be greater than or equal to scrape_interval")
 
 type ProviderFileSystemUsage struct {
 	MountPrefix             string                      `json:"mountprefix" default:""` // Host root filesytem when running inside a container
@@ -25,14 +29,14 @@ type ProviderFileSystemUsage struct {
 	MountPointWhitelist     []string                    `json:"mountpoint_whitelist" default:"[]"`
 	SpaceRemainingThreshold utils.RelativeAbsoluteValue `json:"threshold" default:"20%" custom:"relative_absolute_value"`
 	RateThreshold           utils.RelativeAbsoluteValue `json:"rate_threshold" default:"1g" custom:"relative_absolute_value"`
-	RateThresholdWindow     time.Duration               `json:"rate_threshold_window" default:"5m"`
+	RateThresholdWindow     customtypes.Duration        `json:"rate_threshold_window" default:"5m"`
 
 	mountPointStats map[string]*stats.WindowCollector[uint64]
 }
 
 func NewProviderFileSystemUsage(params map[string]any, scrapeInterval time.Duration) (Provider, error) {
 	mapperCtx := configmapper.MakeContext()
-	err := mapperCtx.RegisterCustomParser("relative_absolute_value", func(s string) (reflect.Value, error) {
+	err := mapperCtx.RegisterCustomFieldParser("relative_absolute_value", func(s string) (reflect.Value, error) {
 		value, err := utils.RelativeAbsoluteValueFromString(s)
 		if err != nil {
 			return reflect.Value{}, err
@@ -49,8 +53,8 @@ func NewProviderFileSystemUsage(params map[string]any, scrapeInterval time.Durat
 		return nil, err
 	}
 	cfg.mountPointStats = make(map[string]*stats.WindowCollector[uint64])
-	if cfg.RateThresholdWindow < scrapeInterval {
-		return nil, fmt.Errorf("rate_threshold_window must be greater than or equal to scrape_interval (%v < %v)", cfg.RateThresholdWindow, scrapeInterval)
+	if cfg.RateThresholdWindow.AsDuration() < scrapeInterval {
+		return nil, fmt.Errorf("%w: (%v < %v)", ErrInvalidRateThresholdWindow, cfg.RateThresholdWindow, scrapeInterval)
 	}
 	return &cfg, err
 }
@@ -58,7 +62,7 @@ func NewProviderFileSystemUsage(params map[string]any, scrapeInterval time.Durat
 func (provider *ProviderFileSystemUsage) updateSpaceIncreaseStats(metric MetricWrapper, mountPoint string, remainingSpace, totalSpace uint64) {
 	_, ok := provider.mountPointStats[mountPoint]
 	if !ok {
-		v := stats.MakeWindowCollector[uint64](provider.RateThresholdWindow)
+		v := stats.MakeWindowCollector[uint64](provider.RateThresholdWindow.AsDuration())
 		provider.mountPointStats[mountPoint] = &v
 	}
 	mpStats := provider.mountPointStats[mountPoint]
@@ -68,7 +72,7 @@ func (provider *ProviderFileSystemUsage) updateSpaceIncreaseStats(metric MetricW
 		last := mpStats.Last()
 		deltaAvailable := max(last.Data, first.Data) - min(last.Data, first.Data)
 		rate := float64(deltaAvailable) / (last.Timestamp.Sub(first.Timestamp).Seconds())
-		threshold := float64(provider.RateThreshold.GetValue(totalSpace)) / provider.RateThresholdWindow.Seconds()
+		threshold := float64(provider.RateThreshold.GetValue(totalSpace)) / provider.RateThresholdWindow.AsDuration().Seconds()
 		if rate >= threshold {
 			if last.Data > first.Data {
 				metric.PushFailure("available space increased rapidly by %v in %v to reach %v",
@@ -169,6 +173,6 @@ func (*ProviderFileSystemUsage) Destroy() {
 
 func init() {
 	RegisterProvider("filesystemusage", func(ctx context.Context, cfg Config) (Provider, error) {
-		return NewProviderFileSystemUsage(cfg.Params, cfg.ScrapeInterval)
+		return NewProviderFileSystemUsage(cfg.Params, cfg.ScrapeInterval.AsDuration())
 	})
 }

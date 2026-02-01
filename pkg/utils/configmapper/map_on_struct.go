@@ -1,19 +1,27 @@
 package configmapper
 
 import (
+	"encoding"
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
+)
+
+var (
+	ErrInvalidType        = errors.New("invalid type")
+	ErrParsingFailed      = errors.New("parsing failed")
+	ErrUnsupportedDefault = errors.New("unsupported default value")
+	ErrStructureMismatch  = errors.New("structure mismatch")
 )
 
 func getAs[Output any](input any) (Output, error) {
 	value, ok := input.(Output)
 	if !ok {
-		return utils.Dummy[Output](), fmt.Errorf("was expecting type %v, got %v (%v)", reflect.TypeFor[Output](), reflect.TypeOf(input), input)
+		return utils.Dummy[Output](), fmt.Errorf("%w: was expecting type %v, got %v (%v)", ErrInvalidType, reflect.TypeFor[Output](), reflect.TypeOf(input), input)
 	}
 	return value, nil
 }
@@ -22,7 +30,7 @@ func stringToInt(type_ reflect.Type, valueAsString string) (reflect.Value, error
 	defaultValue := reflect.New(type_).Elem()
 	intVal, err := strconv.ParseInt(valueAsString, 10, 64)
 	if err != nil {
-		return reflect.Value{}, fmt.Errorf("unable to parse int: %v", err)
+		return reflect.Value{}, fmt.Errorf("%w: unable to parse int: %v", ErrParsingFailed, err)
 	}
 	reflect.New(type_)
 	defaultValue.SetInt(intVal)
@@ -33,7 +41,7 @@ func stringToUint(type_ reflect.Type, valueAsString string) (reflect.Value, erro
 	defaultValue := reflect.New(type_).Elem()
 	uintVal, err := strconv.ParseUint(valueAsString, 10, 64)
 	if err != nil {
-		return reflect.Value{}, fmt.Errorf("unable to parse int: %v", err)
+		return reflect.Value{}, fmt.Errorf("%w: unable to parse uint: %v", ErrParsingFailed, err)
 	}
 	reflect.New(type_)
 	defaultValue.SetUint(uintVal)
@@ -48,19 +56,19 @@ func stringToBool(valueAsString string) (reflect.Value, error) {
 func getDefaultValue(ctx *Context, field reflect.StructField) (reflect.Value, error) {
 	if tag, ok := field.Tag.Lookup("default"); ok {
 
-		customParser, err := ctx.getCustomParserIfAny(&field)
+		customFieldParser, err := ctx.getCustomFieldParserIfAny(&field)
 		if err != nil {
 			return reflect.Value{}, err
-		} else if customParser != nil {
-			return (*customParser)(tag)
+		} else if customFieldParser != nil {
+			return (*customFieldParser)(tag)
 		}
 
-		if field.Type == reflect.TypeOf(time.Second) {
-			duration, err := time.ParseDuration(tag)
+		// Check for encoding.TextUnmarshaler
+		if val, ok, err := tryMapUsingTextUnmarshaler(field.Type, tag); ok {
 			if err != nil {
-				return reflect.Value{}, fmt.Errorf("unable to parse time.Duration: %v", err)
+				return reflect.Value{}, fmt.Errorf("%w: unable to unmarshal default value: %v", ErrParsingFailed, err)
 			}
-			return reflect.ValueOf(duration), nil
+			return val, nil
 		}
 
 		switch kind := field.Type.Kind(); kind {
@@ -79,24 +87,24 @@ func getDefaultValue(ctx *Context, field reflect.StructField) (reflect.Value, er
 				}
 				return out, nil
 			} else {
-				return reflect.Value{}, fmt.Errorf("unsupported default value for array: %v", tag)
+				return reflect.Value{}, fmt.Errorf("%w: array/slice %v", ErrUnsupportedDefault, tag)
 			}
 		case reflect.Map:
 			if tag == "{}" {
 				return reflect.MakeMap(field.Type), nil
 			} else {
-				return reflect.Value{}, fmt.Errorf("unsupported default value for map: %v", tag)
+				return reflect.Value{}, fmt.Errorf("%w: map %v", ErrUnsupportedDefault, tag)
 			}
 		case reflect.Struct:
 			if tag == "{}" {
 				defaultValue, err := mapOnStruct(ctx, field.Type, map[string]any{}, "")
 				if err != nil {
-					return reflect.Value{}, fmt.Errorf("unable to default struct: %v", err)
+					return reflect.Value{}, fmt.Errorf("%w: unable to default struct: %v", ErrParsingFailed, err)
 				} else {
 					return defaultValue, nil
 				}
 			} else {
-				return reflect.Value{}, fmt.Errorf("unsupported default value for map: %v", tag)
+				return reflect.Value{}, fmt.Errorf("%w: map %v", ErrUnsupportedDefault, tag)
 			}
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return stringToInt(field.Type, tag)
@@ -107,7 +115,7 @@ func getDefaultValue(ctx *Context, field reflect.StructField) (reflect.Value, er
 		case reflect.Bool:
 			return stringToBool(tag)
 		default:
-			return reflect.Value{}, fmt.Errorf("unsupported kind %v for default", kind)
+			return reflect.Value{}, fmt.Errorf("%w: %v for default", ErrUnsupportedDefault, kind)
 		}
 
 	}
@@ -117,7 +125,7 @@ func getDefaultValue(ctx *Context, field reflect.StructField) (reflect.Value, er
 func mapOnSlice(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
 	asSlice, ok := raw.([]any)
 	if !ok {
-		return reflect.Value{}, fmt.Errorf("[%v] does not match slice", level)
+		return reflect.Value{}, fmt.Errorf("%w: [%v] expected slice", ErrStructureMismatch, level)
 	}
 
 	elemType := type_.Elem()
@@ -147,11 +155,11 @@ func mapOnPtr(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.
 func mapOnStruct(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
 	asMap, ok := raw.(map[string]any)
 	if !ok {
-		return reflect.Value{}, fmt.Errorf("[%v] does not match struct", level)
+		return reflect.Value{}, fmt.Errorf("%w: [%v] expected struct", ErrStructureMismatch, level)
 	}
 
 	if type_.Kind() != reflect.Struct {
-		return reflect.Value{}, fmt.Errorf("[%v] work only on struct, %v provided", level, type_.Kind())
+		return reflect.Value{}, fmt.Errorf("%w: [%v] work only on struct, %v provided", ErrStructureMismatch, level, type_.Kind())
 	}
 
 	target := reflect.New(type_).Elem()
@@ -164,15 +172,15 @@ func mapOnStruct(ctx *Context, type_ reflect.Type, raw any, level string) (refle
 			if !ok && !isOptional {
 				defaultValue, err := getDefaultValue(ctx, field)
 				if err != nil {
-					return reflect.Value{}, fmt.Errorf("[%v/%v] unable to parse default value: %v", level, tag, err)
+					return reflect.Value{}, fmt.Errorf("%w: [%v/%v] unable to parse default value: %v", ErrParsingFailed, level, tag, err)
 				}
 				if !defaultValue.IsValid() {
-					return reflect.Value{}, fmt.Errorf("[%v/%v] missing field", level, tag)
+					return reflect.Value{}, fmt.Errorf("%w: [%v/%v] missing field", ErrStructureMismatch, level, tag)
 				} else {
 					target.Field(i).Set(defaultValue)
 				}
 			} else {
-				customParser, err := ctx.getCustomParserIfAny(&field)
+				customParser, err := ctx.getCustomFieldParserIfAny(&field)
 				var value reflect.Value
 				if err != nil {
 					return reflect.Value{}, err
@@ -201,18 +209,18 @@ func mapOnStruct(ctx *Context, type_ reflect.Type, raw any, level string) (refle
 func mapOnMap(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
 	asMap, ok := raw.(map[string]any)
 	if !ok {
-		return reflect.Value{}, fmt.Errorf("[%v] does not match map", level)
+		return reflect.Value{}, fmt.Errorf("%w: [%v] expected map", ErrStructureMismatch, level)
 	}
 
 	if type_.Kind() != reflect.Map {
-		return reflect.Value{}, fmt.Errorf("[%v] work only on map", level)
+		return reflect.Value{}, fmt.Errorf("%w: [%v] work only on map", ErrStructureMismatch, level)
 	}
 
 	elemType := type_.Elem()
 	keyType := type_.Key()
 
 	if keyType.Kind() != reflect.String {
-		return reflect.Value{}, fmt.Errorf("[%v] only string is allowed for key (%v given)", level, keyType)
+		return reflect.Value{}, fmt.Errorf("%w: [%v] only string is allowed for key (%v given)", ErrInvalidType, level, keyType)
 	}
 	target := reflect.MakeMapWithSize(type_, 0)
 	for k, v := range asMap {
@@ -237,7 +245,7 @@ func mapOnInt(type_ reflect.Type, raw any) (reflect.Value, error) {
 	case string:
 		return stringToInt(type_, intVal)
 	default:
-		return reflect.Value{}, fmt.Errorf("unsupported type for int: %T", intVal)
+		return reflect.Value{}, fmt.Errorf("%w: %T", ErrInvalidType, intVal)
 	}
 
 	return value, nil
@@ -254,7 +262,7 @@ func mapOnUint(type_ reflect.Type, raw any) (reflect.Value, error) {
 	case string:
 		return stringToUint(type_, intVal)
 	default:
-		return reflect.Value{}, fmt.Errorf("unsupported type for uint: %T", intVal)
+		return reflect.Value{}, fmt.Errorf("%w: %T", ErrInvalidType, intVal)
 	}
 	return value, nil
 }
@@ -272,18 +280,29 @@ func mapOnBool(raw any) (reflect.Value, error) {
 	return reflect.ValueOf(value), err
 }
 
+func tryMapUsingTextUnmarshaler(type_ reflect.Type, rawValue any) (reflect.Value, bool, error) {
+	newValue := reflect.New(type_)
+	if unmarshaler, ok := newValue.Interface().(encoding.TextUnmarshaler); ok {
+		value, err := getAs[string](rawValue)
+		if err != nil {
+			return reflect.Value{}, true, fmt.Errorf("%w: expected string for TextUnmarshaler: %v", ErrInvalidType, err)
+		}
+		if err := unmarshaler.UnmarshalText([]byte(value)); err != nil {
+			return reflect.Value{}, true, err
+		}
+		return newValue.Elem(), true, nil
+	}
+	return reflect.Value{}, false, nil
+}
+
 func mapOnAny(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
-	if type_ == reflect.TypeOf(time.Second) {
-		durationAsString, err := getAs[string](raw)
+
+	// Check for encoding.TextUnmarshaler
+	if val, ok, err := tryMapUsingTextUnmarshaler(type_, raw); ok {
 		if err != nil {
-			return reflect.Value{}, fmt.Errorf("[%v] unable to parse time.Duration: %v", level, err)
+			return reflect.Value{}, fmt.Errorf("%w: [%v] unable to unmarshal values: %v", ErrParsingFailed, level, err)
 		}
-		var duration time.Duration
-		duration, err = time.ParseDuration(durationAsString)
-		if err != nil {
-			return reflect.Value{}, fmt.Errorf("[%v] unable to parse time.Duration: %v", level, err)
-		}
-		return reflect.ValueOf(duration), nil
+		return val, nil
 	}
 
 	switch kind := type_.Kind(); kind {
@@ -306,14 +325,14 @@ func mapOnAny(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.
 	case reflect.Bool:
 		return mapOnBool(raw)
 	default:
-		return reflect.Value{}, fmt.Errorf("[%v] mapOnAny: unsupported type %v", level, kind)
+		return reflect.Value{}, fmt.Errorf("%w: [%v] mapOnAny: unsupported type %v", ErrInvalidType, level, kind)
 	}
 }
 
 func MapOnStructWithContext[T any](context *Context, raw map[string]any) (T, error) {
 	if kind := reflect.TypeFor[T]().Kind(); kind != reflect.Struct {
 		var output T
-		return output, fmt.Errorf("require a struct type, %v provided", kind)
+		return output, fmt.Errorf("%w: require a struct type, %v provided", ErrInvalidType, kind)
 	}
 
 	s, err := mapOnStruct(context, reflect.TypeFor[T](), raw, "")
