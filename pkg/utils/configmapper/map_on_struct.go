@@ -1,11 +1,11 @@
 package configmapper
 
 import (
+	"encoding"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 )
@@ -48,19 +48,19 @@ func stringToBool(valueAsString string) (reflect.Value, error) {
 func getDefaultValue(ctx *Context, field reflect.StructField) (reflect.Value, error) {
 	if tag, ok := field.Tag.Lookup("default"); ok {
 
-		customParser, err := ctx.getCustomParserIfAny(&field)
+		customFieldParser, err := ctx.getCustomFieldParserIfAny(&field)
 		if err != nil {
 			return reflect.Value{}, err
-		} else if customParser != nil {
-			return (*customParser)(tag)
+		} else if customFieldParser != nil {
+			return (*customFieldParser)(tag)
 		}
 
-		if field.Type == reflect.TypeOf(time.Second) {
-			duration, err := time.ParseDuration(tag)
+		// Check for encoding.TextUnmarshaler
+		if val, ok, err := tryMapUsingTextUnmarshaler(field.Type, tag); ok {
 			if err != nil {
-				return reflect.Value{}, fmt.Errorf("unable to parse time.Duration: %v", err)
+				return reflect.Value{}, fmt.Errorf("unable to unmarshal default value: %v", err)
 			}
-			return reflect.ValueOf(duration), nil
+			return val, nil
 		}
 
 		switch kind := field.Type.Kind(); kind {
@@ -172,7 +172,7 @@ func mapOnStruct(ctx *Context, type_ reflect.Type, raw any, level string) (refle
 					target.Field(i).Set(defaultValue)
 				}
 			} else {
-				customParser, err := ctx.getCustomParserIfAny(&field)
+				customParser, err := ctx.getCustomFieldParserIfAny(&field)
 				var value reflect.Value
 				if err != nil {
 					return reflect.Value{}, err
@@ -272,18 +272,29 @@ func mapOnBool(raw any) (reflect.Value, error) {
 	return reflect.ValueOf(value), err
 }
 
+func tryMapUsingTextUnmarshaler(type_ reflect.Type, rawValue any) (reflect.Value, bool, error) {
+	newValue := reflect.New(type_)
+	if unmarshaler, ok := newValue.Interface().(encoding.TextUnmarshaler); ok {
+		value, err := getAs[string](rawValue)
+		if err != nil {
+			return reflect.Value{}, true, fmt.Errorf("expected string for TextUnmarshaler: %v", err)
+		}
+		if err := unmarshaler.UnmarshalText([]byte(value)); err != nil {
+			return reflect.Value{}, true, err
+		}
+		return newValue.Elem(), true, nil
+	}
+	return reflect.Value{}, false, nil
+}
+
 func mapOnAny(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.Value, error) {
-	if type_ == reflect.TypeOf(time.Second) {
-		durationAsString, err := getAs[string](raw)
+
+	// Check for encoding.TextUnmarshaler
+	if val, ok, err := tryMapUsingTextUnmarshaler(type_, raw); ok {
 		if err != nil {
-			return reflect.Value{}, fmt.Errorf("[%v] unable to parse time.Duration: %v", level, err)
+			return reflect.Value{}, fmt.Errorf("[%v] unable to unmarshal values: %v", level, err)
 		}
-		var duration time.Duration
-		duration, err = time.ParseDuration(durationAsString)
-		if err != nil {
-			return reflect.Value{}, fmt.Errorf("[%v] unable to parse time.Duration: %v", level, err)
-		}
-		return reflect.ValueOf(duration), nil
+		return val, nil
 	}
 
 	switch kind := type_.Kind(); kind {
