@@ -24,13 +24,11 @@ func LoadAndRunNotifiers(ctx context.Context, machineName string, notifierCfgLis
 	var err error
 	for notifierName, notifierCfg := range notifierCfgList {
 		if !utils.IsNameValid(notifierName) {
-			logging.Error("Unable to setup notifier: forbidden characters in name '%v'", notifierName)
-			continue
+			logging.Fatal("Unable to setup notifier: forbidden characters in name '%v'", notifierName)
 		}
 		notifierList[notifierName], err = LoadNotifierFromConfig(notifierCfg)
 		if err != nil {
-			logging.Error("Unable to load notifier: %v", err)
-			continue
+			logging.Fatal("Unable to load notifier: %v", err)
 		}
 	}
 
