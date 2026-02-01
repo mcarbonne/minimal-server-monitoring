@@ -1,8 +1,11 @@
 package notifier
 
 import (
+	"errors"
 	"fmt"
 )
+
+var ErrNotifierNotFound = errors.New("notifier not found")
 
 type Factory func(cfg Config) (Notifier, error)
 
@@ -16,5 +19,5 @@ func GetNotifier(name string) (Factory, error) {
 	if factory, ok := registry[name]; ok {
 		return factory, nil
 	}
-	return nil, fmt.Errorf("notifier '%s' not found", name)
+	return nil, fmt.Errorf("%w: %s", ErrNotifierNotFound, name)
 }

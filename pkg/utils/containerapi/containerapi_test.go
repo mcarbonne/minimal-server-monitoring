@@ -2,12 +2,12 @@ package containerapi_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"testing"
 
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/containerapi"
-	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/containerapi/errdef"
 	"gotest.tools/v3/assert"
 )
 
@@ -67,6 +67,6 @@ func TestContainerAPIFeatures(t *testing.T) {
 
 	inspect, err := dockerClient.ContainerInspect(context.Background(), "dummyid")
 	assert.Equal(t, inspect, containerapi.ContainerInspect{})
-	assert.Equal(t, true, errdef.IsErrNotFound(err))
-	assert.Equal(t, "container [dummyid] not found", err.Error())
+	assert.Equal(t, true, errors.Is(err, containerapi.ErrContainerNotFound))
+	assert.Equal(t, "container not found: 'dummyid'", err.Error())
 }

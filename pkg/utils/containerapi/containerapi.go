@@ -10,7 +10,12 @@ import (
 	"time"
 
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
-	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/containerapi/errdef"
+)
+
+var (
+	ErrListContainers    = errors.New("failed to list containers")
+	ErrInspectContainer  = errors.New("failed to inspect container")
+	ErrContainerNotFound = errors.New("container not found")
 )
 
 type Client struct {
@@ -40,7 +45,7 @@ func (c *Client) ContainerList(ctx context.Context) ([]Container, error) {
 	defer utils.SafeClose(resp.Body)
 
 	if resp.StatusCode != 200 {
-		return nil, errors.New("failed to list containers")
+		return nil, ErrListContainers
 	}
 
 	var result ContainerList
@@ -59,10 +64,10 @@ func (c *Client) ContainerInspect(ctx context.Context, containerId string) (Cont
 	defer utils.SafeClose(resp.Body)
 
 	if resp.StatusCode == 404 {
-		return ContainerInspect{}, errdef.ErrorNotFound(fmt.Errorf("container [%v] not found", containerId))
+		return ContainerInspect{}, fmt.Errorf("%w: '%v'", ErrContainerNotFound, containerId)
 	}
 	if resp.StatusCode != 200 {
-		return ContainerInspect{}, errors.New("failed to inspect container")
+		return ContainerInspect{}, fmt.Errorf("%w: '%v'", ErrInspectContainer, containerId)
 	}
 
 	var result ContainerInspect

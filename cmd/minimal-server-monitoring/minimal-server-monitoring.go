@@ -72,6 +72,15 @@ func main() {
 		notifyChan <- makeStartupMessage(&cfg)
 	}
 
+	// Notify internal errors
+	logging.SetErrorHook(func(msg string) {
+		select {
+		case notifyChan <- notifier.MakeMessage(notifier.Notification, "Internal error: %s", msg):
+		default:
+			// Channel full, dropping notification to avoid blocking/deadlock
+		}
+	})
+
 	<-signalChan
 	logging.Info("Exiting...")
 	storage.Sync(false)

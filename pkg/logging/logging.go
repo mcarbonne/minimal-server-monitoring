@@ -10,7 +10,12 @@ import (
 
 var (
 	defaultLogger = log.New(os.Stdout, "", log.Ldate|log.Lmicroseconds|log.Lmsgprefix)
+	errorHook     func(string)
 )
+
+func SetErrorHook(hook func(string)) {
+	errorHook = hook
+}
 
 func Log(level, format string, args ...any) {
 	_, file, line, ok := runtime.Caller(2)
@@ -41,7 +46,11 @@ func Warning(format string, args ...any) {
 }
 
 func Error(format string, args ...any) {
-	Log("ERROR", format, args...)
+	msg := fmt.Sprintf(format, args...)
+	Log("ERROR", "%s", msg)
+	if errorHook != nil {
+		errorHook(msg)
+	}
 }
 
 func Fatal(format string, args ...any) {

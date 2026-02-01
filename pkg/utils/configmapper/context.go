@@ -6,6 +6,11 @@ import (
 	"reflect"
 )
 
+var (
+	ErrCustomParserMissing           = errors.New("custom parser missing")
+	ErrCustomParserAlreadyRegistered = errors.New("custom parser already registered")
+)
+
 type CustomFieldsParserFunction func(string) (reflect.Value, error)
 
 type Context struct {
@@ -21,7 +26,7 @@ func MakeContext() Context {
 func (c *Context) RegisterCustomFieldParser(name string, lambda CustomFieldsParserFunction) error {
 	_, ok := c.customFieldsParsers[name]
 	if ok {
-		return errors.New("Custom parser " + name + " already registered")
+		return fmt.Errorf("%w: %s", ErrCustomParserAlreadyRegistered, name)
 	} else {
 		c.customFieldsParsers[name] = lambda
 		return nil
@@ -34,7 +39,7 @@ func (ctx *Context) getCustomFieldParserIfAny(structField *reflect.StructField) 
 		if ok {
 			return &parser, nil
 		} else {
-			return nil, fmt.Errorf("custom parser missing for '%v'", tag)
+			return nil, fmt.Errorf("%w: '%v'", ErrCustomParserMissing, tag)
 		}
 	}
 	return nil, nil

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper/customtypes"
+	"gotest.tools/v3/assert"
 )
 
 func TestParseTimeOfDay(t *testing.T) {
@@ -54,12 +55,11 @@ func TestParseTimeOfDay(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := customtypes.ParseTimeOfDay(tt.input)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseTimeOfDay() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !tt.wantErr && got != tt.want {
-				t.Errorf("ParseTimeOfDay() got = %v, want %v", got, tt.want)
+			if tt.wantErr {
+				assert.Assert(t, err != nil, "Expected error for input %v", tt.input)
+			} else {
+				assert.NilError(t, err)
+				assert.Equal(t, got, tt.want)
 			}
 		})
 	}
@@ -68,8 +68,5 @@ func TestParseTimeOfDay(t *testing.T) {
 func TestTimeOfDay_String(t *testing.T) {
 	tod := customtypes.TimeOfDay{Hour: 14, Minute: 30}
 	expected := "14:30"
-
-	if tod.String() != expected {
-		t.Errorf("String() = %s; want %s", tod.String(), expected)
-	}
+	assert.Equal(t, tod.String(), expected)
 }

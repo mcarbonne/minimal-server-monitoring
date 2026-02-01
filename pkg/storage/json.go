@@ -62,7 +62,7 @@ func (js *JSONStorage) Sync(force bool) {
 		encoder.SetIndent("", " ")
 		err = encoder.Encode(&toBeEncoded)
 		if err != nil {
-			logging.Fatal("Unable to encode: %v", err.Error())
+			logging.Error("Unable to encode: %v", err.Error())
 		}
 	}
 	js.syncUnsafe(force)

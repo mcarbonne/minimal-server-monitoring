@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"slices"
@@ -18,6 +19,8 @@ import (
 	"github.com/moby/sys/mountinfo"
 	"golang.org/x/sys/unix"
 )
+
+var ErrInvalidRateThresholdWindow = errors.New("rate_threshold_window must be greater than or equal to scrape_interval")
 
 type ProviderFileSystemUsage struct {
 	MountPrefix             string                      `json:"mountprefix" default:""` // Host root filesytem when running inside a container
@@ -51,7 +54,7 @@ func NewProviderFileSystemUsage(params map[string]any, scrapeInterval time.Durat
 	}
 	cfg.mountPointStats = make(map[string]*stats.WindowCollector[uint64])
 	if cfg.RateThresholdWindow.AsDuration() < scrapeInterval {
-		return nil, fmt.Errorf("rate_threshold_window must be greater than or equal to scrape_interval (%v < %v)", cfg.RateThresholdWindow, scrapeInterval)
+		return nil, fmt.Errorf("%w: (%v < %v)", ErrInvalidRateThresholdWindow, cfg.RateThresholdWindow, scrapeInterval)
 	}
 	return &cfg, err
 }
