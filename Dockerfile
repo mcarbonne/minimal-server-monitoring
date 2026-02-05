@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.25.6-bookworm AS buildstage
+FROM golang:1.26rc3-bookworm AS buildstage
 
 WORKDIR /src
 COPY . /src/.
