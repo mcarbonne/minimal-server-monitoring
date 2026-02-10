@@ -9,25 +9,30 @@ import (
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper"
 )
 
-type ProviderPing struct {
-	Targets    []string `json:"targets"`
-	RetryCount uint     `json:"retry_count" default:"3"`
+type Pinger interface {
+	Ping(target string) bool
 }
 
-func ping(target string) bool {
-	Command := fmt.Sprintf("ping -c 1 -W 1 %s > /dev/null", target)
+type defaultPinger struct{}
 
-	_, err := exec.Command("/bin/sh", "-c", Command).Output()
-
+func (d *defaultPinger) Ping(target string) bool {
+	command := fmt.Sprintf("ping -c 1 -W 1 %s > /dev/null", target)
+	_, err := exec.Command("/bin/sh", "-c", command).Output()
 	if _, ok := err.(*exec.ExitError); ok {
 		return false
 	}
 	return true
 }
 
-func pingRetry(target string, retryCount uint) bool {
-	for range retryCount {
-		if ping(target) {
+type ProviderPing struct {
+	pinger     Pinger
+	Targets    []string `json:"targets"`
+	RetryCount uint     `json:"retry_count" default:"3"`
+}
+
+func (p *ProviderPing) pingRetry(target string) bool {
+	for range p.RetryCount {
+		if p.pinger.Ping(target) {
 			return true
 		}
 	}
@@ -36,6 +41,9 @@ func pingRetry(target string, retryCount uint) bool {
 
 func NewProviderPing(params map[string]any) (Provider, error) {
 	cfg, err := configmapper.MapOnStruct[ProviderPing](params)
+	if err == nil {
+		cfg.pinger = &defaultPinger{}
+	}
 	return &cfg, err
 }
 
@@ -46,7 +54,7 @@ func (pingProvider *ProviderPing) GetUpdateTaskList(ctx context.Context, resultW
 		taskList = append(taskList,
 			func() {
 				metric := resultWrapper.Metric("ping_"+target, "ping ["+target+"]")
-				if pingRetry(target, pingProvider.RetryCount) {
+				if pingProvider.pingRetry(target) {
 					metric.PushOK("")
 				} else {
 					metric.PushFailure("unreachable")

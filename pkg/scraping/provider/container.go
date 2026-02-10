@@ -11,8 +11,13 @@ import (
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/containerapi"
 )
 
+type ContainerClient interface {
+	ContainerList(ctx context.Context) ([]containerapi.Container, error)
+	ContainerInspect(ctx context.Context, containerId string) (containerapi.ContainerInspect, error)
+}
+
 type ProviderContainer struct {
-	client *containerapi.Client
+	client ContainerClient
 
 	containerRestartCount map[string]int
 	containerState        map[string]string
