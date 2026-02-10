@@ -15,7 +15,8 @@ import (
 const NB_RETRIES = 3
 
 type ProviderSystemd struct {
-	systemdConn *dbus.Conn
+	systemdConn   *dbus.Conn
+	knownUnitList []dbus.UnitStatus
 }
 
 func (provider *ProviderSystemd) reset(ctx context.Context) error {
@@ -76,11 +77,14 @@ func (systemdProvider *ProviderSystemd) GetUpdateTaskList(ctx context.Context, r
 			if err != nil {
 				metricListServices.PushFailure("failed to list services: %v", err)
 				return
-			} else {
-				metricListServices.PushOK("")
 			}
+			metricListServices.PushOK("")
+
+			// For O(1) lookup
+			currentUnitsMap := make(map[string]struct{}, len(listOfUnits))
 
 			for _, unit := range listOfUnits {
+				currentUnitsMap[unit.Name] = struct{}{}
 				prettyName := getServicePrettyName(unit)
 				metric := resultWrapper.Metric("systemd_"+unit.Name, prettyName+"@systemd")
 				if unit.ActiveState == "failed" {
@@ -89,6 +93,15 @@ func (systemdProvider *ProviderSystemd) GetUpdateTaskList(ctx context.Context, r
 					metric.PushOK("")
 				}
 			}
+
+			for _, knownUnit := range systemdProvider.knownUnitList {
+				if _, exists := currentUnitsMap[knownUnit.Name]; !exists {
+					prettyName := getServicePrettyName(knownUnit)
+					metric := resultWrapper.Metric("systemd_"+knownUnit.Name, prettyName+"@systemd")
+					metric.PushOK("service removed")
+				}
+			}
+			systemdProvider.knownUnitList = listOfUnits
 		},
 	}
 }
