@@ -22,7 +22,23 @@ import (
 
 var ErrInvalidRateThresholdWindow = errors.New("rate_threshold_window must be greater than or equal to scrape_interval")
 
+type FileSystemClient interface {
+	Statfs(path string, buf *unix.Statfs_t) error
+	GetMounts(filter func(info *mountinfo.Info) (skip, stop bool)) ([]*mountinfo.Info, error)
+}
+
+type defaultFileSystemClient struct{}
+
+func (d *defaultFileSystemClient) Statfs(path string, buf *unix.Statfs_t) error {
+	return unix.Statfs(path, buf)
+}
+
+func (d *defaultFileSystemClient) GetMounts(filter func(info *mountinfo.Info) (skip, stop bool)) ([]*mountinfo.Info, error) {
+	return mountinfo.GetMounts(filter)
+}
+
 type ProviderFileSystemUsage struct {
+	client                  FileSystemClient
 	MountPrefix             string                      `json:"mountprefix" default:""` // Host root filesytem when running inside a container
 	FSTypeWhitelist         []string                    `json:"fstypes" default:"[ext4, btrfs]"`
 	MountPointBlacklist     []string                    `json:"mountpoint_blacklist" default:"[]"`
@@ -52,6 +68,7 @@ func NewProviderFileSystemUsage(params map[string]any, scrapeInterval time.Durat
 	if err != nil {
 		return nil, err
 	}
+	cfg.client = &defaultFileSystemClient{}
 	cfg.mountPointStats = make(map[string]*stats.WindowCollector[uint64])
 	if cfg.RateThresholdWindow.AsDuration() < scrapeInterval {
 		return nil, fmt.Errorf("%w: (%v < %v)", ErrInvalidRateThresholdWindow, cfg.RateThresholdWindow, scrapeInterval)
@@ -94,7 +111,7 @@ func (provider *ProviderFileSystemUsage) updateSpaceIncreaseStats(metric MetricW
 func (provider *ProviderFileSystemUsage) checkMountPoint(resultWrapper *ScrapeResultWrapper, mountPoint string) {
 	var stat unix.Statfs_t
 
-	err := unix.Statfs(mountPoint, &stat)
+	err := provider.client.Statfs(mountPoint, &stat)
 
 	prettyMountpoint := strings.TrimPrefix(mountPoint, provider.MountPrefix)
 	if !strings.HasPrefix(prettyMountpoint, "/") {
@@ -125,7 +142,7 @@ func (provider *ProviderFileSystemUsage) GetUpdateTaskList(ctx context.Context, 
 	if len(provider.MountPointWhitelist) > 0 {
 		mountpoints = provider.MountPointWhitelist
 	} else {
-		allMountPoints, err := mountinfo.GetMounts(func(info *mountinfo.Info) (skip, stop bool) {
+		allMountPoints, err := provider.client.GetMounts(func(info *mountinfo.Info) (skip, stop bool) {
 			return !slices.Contains(provider.FSTypeWhitelist, info.FSType) || slices.Contains(provider.MountPointBlacklist, info.Mountpoint), false
 		})
 

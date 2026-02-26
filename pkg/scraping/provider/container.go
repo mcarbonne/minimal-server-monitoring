@@ -11,11 +11,18 @@ import (
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/containerapi"
 )
 
+type ContainerClient interface {
+	ContainerList(ctx context.Context) ([]containerapi.Container, error)
+	ContainerInspect(ctx context.Context, containerId string) (containerapi.ContainerInspect, error)
+}
+
 type ProviderContainer struct {
-	client *containerapi.Client
+	client ContainerClient
 
 	containerRestartCount map[string]int
 	containerState        map[string]string
+
+	knownContainerList []containerapi.Container
 }
 
 func NewProviderContainer() (Provider, error) {
@@ -42,6 +49,13 @@ func (containerProvider *ProviderContainer) updateStateMetric(resultWrapper *Scr
 	} else {
 		metric.PushOK("")
 	}
+}
+
+func (containerProvider *ProviderContainer) removeStateMetric(resultWrapper *ScrapeResultWrapper, ctr containerapi.Container) {
+	metric := resultWrapper.Metric("container_state_"+ctr.ID, containerPrettyName(ctr)+" state")
+	metric.PushOK("container removed")
+	delete(containerProvider.containerState, ctr.ID)
+	delete(containerProvider.containerRestartCount, ctr.ID)
 }
 
 func (containerProvider *ProviderContainer) updateImageMetric(resultWrapper *ScrapeResultWrapper, storage storage.Storager, ctr containerapi.Container) {
@@ -80,8 +94,13 @@ func (containerProvider *ProviderContainer) GetUpdateTaskList(ctx context.Contex
 				metricListContainer.PushOK("")
 			}
 
+			// For O(1) lookup
+			currentContainersMap := make(map[string]struct{}, len(containers))
+
 			var inspectErrorList []error
+
 			for _, ctr := range containers {
+				currentContainersMap[ctr.ID] = struct{}{}
 				containerProvider.updateStateMetric(resultWrapper, ctr)
 				containerProvider.updateImageMetric(resultWrapper, storage, ctr)
 
@@ -101,6 +120,14 @@ func (containerProvider *ProviderContainer) GetUpdateTaskList(ctx context.Contex
 			} else {
 				metricInspectContainer.PushOK("")
 			}
+
+			// Clean up missing containers
+			for _, knownContainer := range containerProvider.knownContainerList {
+				if _, exists := currentContainersMap[knownContainer.ID]; !exists {
+					containerProvider.removeStateMetric(resultWrapper, knownContainer)
+				}
+			}
+			containerProvider.knownContainerList = containers
 		},
 	}
 }

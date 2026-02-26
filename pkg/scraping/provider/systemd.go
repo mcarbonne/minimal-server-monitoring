@@ -8,33 +8,44 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/logging"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/storage"
-	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils"
 	"github.com/mcarbonne/minimal-server-monitoring/v2/pkg/utils/configmapper"
 )
 
 const NB_RETRIES = 3
 
+type SystemdClient interface {
+	ListUnitsByPatternsContext(ctx context.Context, states []string, patterns []string) ([]dbus.UnitStatus, error)
+	Close()
+}
+
 type ProviderSystemd struct {
-	systemdConn *dbus.Conn
+	client        SystemdClient
+	clientFactory func(context.Context) (SystemdClient, error)
+	knownUnitList []dbus.UnitStatus
 }
 
 func (provider *ProviderSystemd) reset(ctx context.Context) error {
 	var err error
-	provider.systemdConn.Close()
-	provider.systemdConn, err = dbus.NewSystemdConnectionContext(ctx)
+	provider.client.Close()
+	provider.client, err = provider.clientFactory(ctx)
 	return err
+}
+
+func defaultSystemdFactory(ctx context.Context) (SystemdClient, error) {
+	return dbus.NewSystemdConnectionContext(ctx)
 }
 
 func NewProviderSystemd(ctx context.Context, params map[string]any) (Provider, error) {
 	cfg, err := configmapper.MapOnStruct[ProviderSystemd](params)
 	if err == nil {
-		cfg.systemdConn, err = dbus.NewSystemdConnectionContext(ctx)
+		cfg.clientFactory = defaultSystemdFactory
+		cfg.client, err = cfg.clientFactory(ctx)
 	}
 	return &cfg, err
 }
 
 func (provider *ProviderSystemd) listServiceUnits(ctx context.Context) ([]dbus.UnitStatus, error) {
-	result, err := provider.systemdConn.ListUnitsByPatternsContext(ctx, []string{}, []string{"*.service"})
+	result, err := provider.client.ListUnitsByPatternsContext(ctx, []string{}, []string{"*.service"})
 	for i := 0; i < NB_RETRIES && err != nil; i++ {
 		logging.Warning("resetting dbus connection (%v)", err)
 		err = provider.reset(ctx)
@@ -42,27 +53,27 @@ func (provider *ProviderSystemd) listServiceUnits(ctx context.Context) ([]dbus.U
 			logging.Warning("reset failed: %v", err)
 		}
 
-		result, err = provider.systemdConn.ListUnitsByPatternsContext(ctx, []string{}, []string{"*.service"})
+		result, err = provider.client.ListUnitsByPatternsContext(ctx, []string{}, []string{"*.service"})
 	}
 	return result, err
 }
 
-func extractPodmanHealthCheckPrettyName(unit dbus.UnitStatus) *string {
+func extractPodmanHealthCheckPrettyName(unit dbus.UnitStatus) (string, bool) {
 	podmanHealthCheckServiceRegex := `^[\da-f]{64}\.service$`
 	unitNameMatched, err := regexp.MatchString(podmanHealthCheckServiceRegex, unit.Name)
 	if err == nil && unitNameMatched {
 		containerId := unit.Name[:64]
 		expectedDescription := fmt.Sprintf("/usr/bin/podman healthcheck run %v", containerId)
 		if unit.Description == expectedDescription {
-			return utils.Ptr(fmt.Sprintf("container %v healthcheck", containerId[:12]))
+			return fmt.Sprintf("container %v healthcheck", containerId[:12]), true
 		}
 	}
-	return nil
+	return "", false
 }
 
 func getServicePrettyName(unit dbus.UnitStatus) string {
-	if prettyName := extractPodmanHealthCheckPrettyName(unit); prettyName != nil {
-		return *prettyName
+	if prettyName, isPodmanHealthCheck := extractPodmanHealthCheckPrettyName(unit); isPodmanHealthCheck {
+		return prettyName
 	} else {
 		return unit.Name
 	}
@@ -76,11 +87,14 @@ func (systemdProvider *ProviderSystemd) GetUpdateTaskList(ctx context.Context, r
 			if err != nil {
 				metricListServices.PushFailure("failed to list services: %v", err)
 				return
-			} else {
-				metricListServices.PushOK("")
 			}
+			metricListServices.PushOK("")
+
+			// For O(1) lookup
+			currentUnitsMap := make(map[string]struct{}, len(listOfUnits))
 
 			for _, unit := range listOfUnits {
+				currentUnitsMap[unit.Name] = struct{}{}
 				prettyName := getServicePrettyName(unit)
 				metric := resultWrapper.Metric("systemd_"+unit.Name, prettyName+"@systemd")
 				if unit.ActiveState == "failed" {
@@ -89,6 +103,15 @@ func (systemdProvider *ProviderSystemd) GetUpdateTaskList(ctx context.Context, r
 					metric.PushOK("")
 				}
 			}
+
+			for _, knownUnit := range systemdProvider.knownUnitList {
+				if _, exists := currentUnitsMap[knownUnit.Name]; !exists {
+					prettyName := getServicePrettyName(knownUnit)
+					metric := resultWrapper.Metric("systemd_"+knownUnit.Name, prettyName+"@systemd")
+					metric.PushOK("service removed")
+				}
+			}
+			systemdProvider.knownUnitList = listOfUnits
 		},
 	}
 }
@@ -98,7 +121,7 @@ func (*ProviderSystemd) MultipleInstanceAllowed() bool {
 }
 
 func (systemdProvider *ProviderSystemd) Destroy() {
-	systemdProvider.systemdConn.Close()
+	systemdProvider.client.Close()
 }
 
 func init() {
