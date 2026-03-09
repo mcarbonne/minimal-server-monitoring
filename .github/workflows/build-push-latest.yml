@@ -24,7 +24,7 @@ jobs:
 
       - name: Log into registry ${{ env.REGISTRY }}
         if: github.ref_name == 'main' || github.ref_type == 'tag'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
