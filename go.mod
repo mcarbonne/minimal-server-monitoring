@@ -8,7 +8,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1
 	github.com/goccy/go-yaml v1.19.2
 	github.com/moby/sys/mountinfo v0.7.2
-	golang.org/x/sys v0.41.0
+	golang.org/x/sys v0.42.0
 	gotest.tools/v3 v3.5.2
 )
 
