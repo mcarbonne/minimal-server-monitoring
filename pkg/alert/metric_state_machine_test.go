@@ -102,7 +102,7 @@ func TestMetricStateMachine_Removal(t *testing.T) {
 
 	metricID := "test_metric"
 	metricName := "Test Metric"
-	now := time.Now()
+	now := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	// 1. Failure
 	msm.Update(provider.MetricState{MetricID: metricID, Name: metricName, Status: provider.Unhealthy}, now)
