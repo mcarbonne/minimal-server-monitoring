@@ -63,8 +63,8 @@ docker run \
 |notifiers|map of [notifiers](#notifier-configuration)|yes|-|
 |cache|string (path)|yes|-|
 |startup_message|boolean|false|true|
-|alert.unhealthy_threshold|uint|no|1|
-|alert.healthy_threshold|uint|no|1|
+|alert.unhealthy_threshold|uint|no|1 (min 1)|
+|alert.healthy_threshold|uint|no|1 (min 1)|
 |alert.failure_reminder|duration <sup>[*](#type-parsing)</sup>|no|2h|
 |alert.failure_reminder_count|uint|no|3|
 |alert.daily_reminder_time|time of day (HH:MM)|no|08:00|
@@ -242,8 +242,8 @@ AlertCenter is here to:
 - avoid beeing flooded with notifications (filtering + grouping)
 
 #### Generate notifications
-If a state is marked as failed `unhealthy_threshold` time in a row, a notification is sent (metric XX failed).
-If a state is marked as OK `healthy_threshold` time in a row, a notification is sent (metric XX OK).
+If a state is marked as failed `unhealthy_threshold` consecutive times, a notification is sent (1 means immediately).
+If a state is marked as OK `healthy_threshold` consecutive times, a notification is sent (1 means immediately).
 
 Messages are forwared as notifications (no processing at this step).
 

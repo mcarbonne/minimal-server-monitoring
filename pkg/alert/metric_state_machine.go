@@ -10,8 +10,8 @@ import (
 )
 
 type MetricStateMachine struct {
-	healthyThreshold   uint // how many consecutived pass tests to mark metric as healthy, 0 means metric is healthy on first fail
-	unhealthyThreshold uint // how many consecutive failed tests to mark metric as unhealthy, 0 means metric is unhealthy on first fail
+	healthyThreshold   uint // how many consecutive pass tests to mark metric as healthy (min 1)
+	unhealthyThreshold uint // how many consecutive failed tests to mark metric as unhealthy (min 1)
 
 	isHealthy      bool
 	oppositeInARow uint
@@ -26,8 +26,8 @@ type MetricStateMachine struct {
 
 func MakeMetricStateMachine(healthyThreshold, unhealthyThreshold uint, failureReminderDelay time.Duration, failureReminderCount uint, dailyReminder customtypes.TimeOfDay) *MetricStateMachine {
 	return &MetricStateMachine{
-		healthyThreshold:     healthyThreshold,
-		unhealthyThreshold:   unhealthyThreshold,
+		healthyThreshold:     max(1, healthyThreshold),
+		unhealthyThreshold:   max(1, unhealthyThreshold),
 		isHealthy:            true,
 		oppositeInARow:       0,
 		failureReminder:      failureReminderDelay,
