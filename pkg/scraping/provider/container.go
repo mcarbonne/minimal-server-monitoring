@@ -53,7 +53,7 @@ func (containerProvider *ProviderContainer) updateStateMetric(resultWrapper *Scr
 
 func (containerProvider *ProviderContainer) removeStateMetric(resultWrapper *ScrapeResultWrapper, ctr containerapi.Container) {
 	metric := resultWrapper.Metric("container_state_"+ctr.ID, containerPrettyName(ctr)+" state")
-	metric.PushOK("container removed")
+	metric.PushRemoved("container removed")
 	delete(containerProvider.containerState, ctr.ID)
 	delete(containerProvider.containerRestartCount, ctr.ID)
 }

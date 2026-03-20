@@ -54,14 +54,35 @@ func nextDailyTime(after time.Time, target customtypes.TimeOfDay) time.Time {
 	return candidate.Add(24 * time.Hour)
 }
 
+func (msm *MetricStateMachine) shouldRemind(now time.Time) bool {
+
+	if msm.reminderCounter < msm.failureReminderCount {
+		if now.Sub(msm.lastFailureMessage) >= msm.failureReminder {
+			return true
+		}
+	} else {
+		nextReminder := nextDailyTime(msm.lastFailureMessage, msm.dailyReminder)
+		if now.After(nextReminder) || now.Equal(nextReminder) {
+			return true
+		}
+	}
+	return false
+}
+
 func (msm *MetricStateMachine) Update(metricState provider.MetricState, now time.Time) *notifier.Message {
 
-	var msg *notifier.Message
+	isHealthyUpdate := metricState.Status == provider.Healthy || metricState.Status == provider.Removed
 
-	if msm.isHealthy != metricState.IsHealthy {
+	if msm.isHealthy != isHealthyUpdate {
 		msm.oppositeInARow++
 	} else {
 		msm.oppositeInARow = 0
+	}
+
+	// Special case: if service is removed, we want to clear the alert immediately
+	if !msm.isHealthy && metricState.Status == provider.Removed {
+		msm.isHealthy = true
+		return makeMessage(notifier.Recovery, "removed", metricState.Name, metricState.Description)
 	}
 
 	if msm.isHealthy {
@@ -69,32 +90,18 @@ func (msm *MetricStateMachine) Update(metricState provider.MetricState, now time
 			msm.isHealthy = false
 			msm.lastFailureMessage = now
 			msm.reminderCounter = 0
-			msg = makeMessage(notifier.Failure, "failed", metricState.Name, metricState.Description)
+			return makeMessage(notifier.Failure, "failed", metricState.Name, metricState.Description)
 		}
 	} else {
 		if msm.oppositeInARow >= msm.healthyThreshold {
 			msm.isHealthy = true
-			msg = makeMessage(notifier.Recovery, "recovered", metricState.Name, metricState.Description)
-		} else {
-			shouldRemind := false
-			if msm.reminderCounter < msm.failureReminderCount {
-				if now.Sub(msm.lastFailureMessage) >= msm.failureReminder {
-					shouldRemind = true
-				}
-			} else {
-				nextReminder := nextDailyTime(msm.lastFailureMessage, msm.dailyReminder)
-				if now.After(nextReminder) || now.Equal(nextReminder) {
-					shouldRemind = true
-				}
-			}
-
-			if shouldRemind {
-				msm.lastFailureMessage = now
-				msm.reminderCounter++
-				msg = makeMessage(notifier.Failure, "failed (reminder)", metricState.Name, metricState.Description)
-			}
+			return makeMessage(notifier.Recovery, "recovered", metricState.Name, metricState.Description)
+		} else if msm.shouldRemind(now) {
+			msm.lastFailureMessage = now
+			msm.reminderCounter++
+			return makeMessage(notifier.Failure, "failed (reminder)", metricState.Name, metricState.Description)
 		}
 
 	}
-	return msg
+	return nil
 }

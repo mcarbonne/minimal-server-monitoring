@@ -79,6 +79,6 @@ func TestFileSystemLowSpace(t *testing.T) {
 
 	val := waitForMetricState(t, resultChan, metricID)
 
-	assert.Equal(t, false, val.IsHealthy, "Should be unhealthy due to low space")
+	assert.Equal(t, Unhealthy, val.Status, "Should be unhealthy due to low space")
 	assert.Assert(t, val.Description == "low space remaining (1% / 41 kB)")
 }

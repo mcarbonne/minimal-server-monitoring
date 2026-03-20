@@ -91,7 +91,7 @@ func TestSystemdRetry(t *testing.T) {
 	assert.Equal(t, 3, callCount)
 	assert.Equal(t, 2, factoryCalls)
 
-	assert.Equal(t, true, metric.IsHealthy)
+	assert.Equal(t, Healthy, metric.Status)
 }
 
 func TestSystemdDisappearance(t *testing.T) {
@@ -122,7 +122,7 @@ func TestSystemdDisappearance(t *testing.T) {
 
 	metric := waitForMetricState(t, resultChan, "systemd_systemd_test.service")
 
-	assert.Equal(t, true, metric.IsHealthy)
+	assert.Equal(t, Healthy, metric.Status)
 	assert.Equal(t, "test.service@systemd", metric.Name)
 
 	// 2. Service Disappears
@@ -134,6 +134,6 @@ func TestSystemdDisappearance(t *testing.T) {
 
 	metric = waitForMetricState(t, resultChan, "systemd_systemd_test.service")
 
-	assert.Equal(t, true, metric.IsHealthy)
+	assert.Equal(t, Removed, metric.Status)
 	assert.Equal(t, "service removed", metric.Description)
 }
