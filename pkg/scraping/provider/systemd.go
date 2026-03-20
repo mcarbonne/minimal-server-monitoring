@@ -108,7 +108,7 @@ func (systemdProvider *ProviderSystemd) GetUpdateTaskList(ctx context.Context, r
 				if _, exists := currentUnitsMap[knownUnit.Name]; !exists {
 					prettyName := getServicePrettyName(knownUnit)
 					metric := resultWrapper.Metric("systemd_"+knownUnit.Name, prettyName+"@systemd")
-					metric.PushOK("service removed")
+					metric.PushRemoved("service removed")
 				}
 			}
 			systemdProvider.knownUnitList = listOfUnits

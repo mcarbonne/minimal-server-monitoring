@@ -10,8 +10,8 @@ import (
 )
 
 type MetricStateMachine struct {
-	healthyThreshold   uint // how many consecutived pass tests to mark metric as healthy, 0 means metric is healthy on first fail
-	unhealthyThreshold uint // how many consecutive failed tests to mark metric as unhealthy, 0 means metric is unhealthy on first fail
+	healthyThreshold   uint // how many consecutive pass tests to mark metric as healthy (min 1)
+	unhealthyThreshold uint // how many consecutive failed tests to mark metric as unhealthy (min 1)
 
 	isHealthy      bool
 	oppositeInARow uint
@@ -26,8 +26,8 @@ type MetricStateMachine struct {
 
 func MakeMetricStateMachine(healthyThreshold, unhealthyThreshold uint, failureReminderDelay time.Duration, failureReminderCount uint, dailyReminder customtypes.TimeOfDay) *MetricStateMachine {
 	return &MetricStateMachine{
-		healthyThreshold:     healthyThreshold,
-		unhealthyThreshold:   unhealthyThreshold,
+		healthyThreshold:     max(1, healthyThreshold),
+		unhealthyThreshold:   max(1, unhealthyThreshold),
 		isHealthy:            true,
 		oppositeInARow:       0,
 		failureReminder:      failureReminderDelay,
@@ -54,14 +54,38 @@ func nextDailyTime(after time.Time, target customtypes.TimeOfDay) time.Time {
 	return candidate.Add(24 * time.Hour)
 }
 
+func (msm *MetricStateMachine) shouldRemind(now time.Time) bool {
+
+	if msm.reminderCounter < msm.failureReminderCount {
+		if now.Sub(msm.lastFailureMessage) >= msm.failureReminder {
+			return true
+		}
+	} else {
+		nextReminder := nextDailyTime(msm.lastFailureMessage, msm.dailyReminder)
+		if now.After(nextReminder) || now.Equal(nextReminder) {
+			return true
+		}
+	}
+	return false
+}
+
 func (msm *MetricStateMachine) Update(metricState provider.MetricState, now time.Time) *notifier.Message {
 
-	var msg *notifier.Message
+	isHealthyUpdate := metricState.Status == provider.Healthy || metricState.Status == provider.Removed
 
-	if msm.isHealthy != metricState.IsHealthy {
+	if msm.isHealthy != isHealthyUpdate {
 		msm.oppositeInARow++
 	} else {
 		msm.oppositeInARow = 0
+	}
+
+	// Special case: if service is removed, we want to clear the alert immediately
+	if !msm.isHealthy && metricState.Status == provider.Removed {
+		msm.isHealthy = true
+		msm.oppositeInARow = 0
+		msm.reminderCounter = 0
+		msm.lastFailureMessage = time.Time{}
+		return makeMessage(notifier.Recovery, "removed", metricState.Name, metricState.Description)
 	}
 
 	if msm.isHealthy {
@@ -69,32 +93,18 @@ func (msm *MetricStateMachine) Update(metricState provider.MetricState, now time
 			msm.isHealthy = false
 			msm.lastFailureMessage = now
 			msm.reminderCounter = 0
-			msg = makeMessage(notifier.Failure, "failed", metricState.Name, metricState.Description)
+			return makeMessage(notifier.Failure, "failed", metricState.Name, metricState.Description)
 		}
 	} else {
 		if msm.oppositeInARow >= msm.healthyThreshold {
 			msm.isHealthy = true
-			msg = makeMessage(notifier.Recovery, "recovered", metricState.Name, metricState.Description)
-		} else {
-			shouldRemind := false
-			if msm.reminderCounter < msm.failureReminderCount {
-				if now.Sub(msm.lastFailureMessage) >= msm.failureReminder {
-					shouldRemind = true
-				}
-			} else {
-				nextReminder := nextDailyTime(msm.lastFailureMessage, msm.dailyReminder)
-				if now.After(nextReminder) || now.Equal(nextReminder) {
-					shouldRemind = true
-				}
-			}
-
-			if shouldRemind {
-				msm.lastFailureMessage = now
-				msm.reminderCounter++
-				msg = makeMessage(notifier.Failure, "failed (reminder)", metricState.Name, metricState.Description)
-			}
+			return makeMessage(notifier.Recovery, "recovered", metricState.Name, metricState.Description)
+		} else if msm.shouldRemind(now) {
+			msm.lastFailureMessage = now
+			msm.reminderCounter++
+			return makeMessage(notifier.Failure, "failed (reminder)", metricState.Name, metricState.Description)
 		}
 
 	}
-	return msg
+	return nil
 }

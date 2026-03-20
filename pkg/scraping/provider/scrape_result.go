@@ -4,10 +4,18 @@ import (
 	"fmt"
 )
 
+type MetricStatus uint
+
+const (
+	Healthy MetricStatus = iota
+	Unhealthy
+	Removed
+)
+
 type MetricState struct {
 	MetricID    string
 	Name        string
-	IsHealthy   bool
+	Status      MetricStatus
 	Description string
 }
 
@@ -47,21 +55,25 @@ func (wrapper *ScrapeResultWrapper) getFullID(metricId string) string {
 	return wrapper.prefix + "_" + metricId
 }
 
-func (wrapper *ScrapeResultWrapper) pushState(metricId, name string, isHealthy bool, description string, args ...any) {
+func (wrapper *ScrapeResultWrapper) pushState(metricId, name string, status MetricStatus, description string, args ...any) {
 	wrapper.resultChan <- MetricState{
 		MetricID:    wrapper.getFullID(metricId),
 		Name:        name,
-		IsHealthy:   isHealthy,
+		Status:      status,
 		Description: fmt.Sprintf(description, args...),
 	}
 }
 
 func (wrapper *MetricWrapper) PushFailure(description string, args ...any) {
-	wrapper.resultWrapper.pushState(wrapper.metricID, wrapper.name, false, description, args...)
+	wrapper.resultWrapper.pushState(wrapper.metricID, wrapper.name, Unhealthy, description, args...)
 }
 
 func (wrapper *MetricWrapper) PushOK(description string, args ...any) {
-	wrapper.resultWrapper.pushState(wrapper.metricID, wrapper.name, true, description, args...)
+	wrapper.resultWrapper.pushState(wrapper.metricID, wrapper.name, Healthy, description, args...)
+}
+
+func (wrapper *MetricWrapper) PushRemoved(description string, args ...any) {
+	wrapper.resultWrapper.pushState(wrapper.metricID, wrapper.name, Removed, description, args...)
 }
 
 func (wrapper *MetricWrapper) PushMessage(description string, args ...any) {

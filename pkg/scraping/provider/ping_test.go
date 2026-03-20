@@ -49,11 +49,11 @@ func TestPing(t *testing.T) {
 
 	// Verify 1.1.1.1
 	metricA := waitForMetricState(t, resultChan, "ping_ping_1.1.1.1")
-	assert.Equal(t, true, metricA.IsHealthy)
+	assert.Equal(t, Healthy, metricA.Status)
 
 	// Verify bad.host
 	metricB := waitForMetricState(t, resultChan, "ping_ping_bad.host")
-	assert.Equal(t, false, metricB.IsHealthy)
+	assert.Equal(t, Unhealthy, metricB.Status)
 	assert.Equal(t, "unreachable", metricB.Description)
 
 	// Verify retry logic was used

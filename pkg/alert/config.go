@@ -9,8 +9,8 @@ type GroupingConfig struct {
 }
 
 type Config struct {
-	UnhealthyThreshold   uint                  `json:"unhealthy_threshold" default:"1"` // how many consecutive failed tests to mark metric as unhealthy, 1 means metric is unhealthy on first fail
-	HealthyThreshold     uint                  `json:"healthy_threshold" default:"1"`   // how many consecutived pass tests to mark metric as healthy, 1 means metric is healthy on first fail
+	UnhealthyThreshold   uint                  `json:"unhealthy_threshold" default:"1"` // how many consecutive failed tests to mark metric as unhealthy (1 means immediately)
+	HealthyThreshold     uint                  `json:"healthy_threshold" default:"1"`   // how many consecutive pass tests to mark metric as healthy (1 means immediately)
 	FailureReminder      customtypes.Duration  `json:"failure_reminder" default:"2h"`
 	DailyReminderTime    customtypes.TimeOfDay `json:"daily_reminder_time" default:"08:00"`
 	FailureReminderCount uint                  `json:"failure_reminder_count" default:"3"`

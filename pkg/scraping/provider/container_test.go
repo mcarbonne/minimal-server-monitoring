@@ -67,7 +67,7 @@ func TestContainerDisappearance(t *testing.T) {
 	// Verify Metrics
 	stateMetric := waitForMetricState(t, resultChan, "test_container_state_container123")
 
-	assert.Assert(t, stateMetric.IsHealthy, "Container should be healthy")
+	assert.Equal(t, Healthy, stateMetric.Status, "Container should be healthy")
 	assert.Equal(t, "my-app@container (my-image:latest) state", stateMetric.Name)
 	assert.Equal(t, "", stateMetric.Description)
 
@@ -81,7 +81,7 @@ func TestContainerDisappearance(t *testing.T) {
 	// Verify "Disappeared" Metric
 	stateMetric = waitForMetricState(t, resultChan, "test_container_state_container123")
 
-	assert.Assert(t, stateMetric.IsHealthy, "Disappeared container should be OK")
+	assert.Equal(t, Removed, stateMetric.Status, "Disappeared container should be Removed")
 	assert.Equal(t, "container removed", stateMetric.Description)
 }
 
