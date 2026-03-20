@@ -82,6 +82,9 @@ func (msm *MetricStateMachine) Update(metricState provider.MetricState, now time
 	// Special case: if service is removed, we want to clear the alert immediately
 	if !msm.isHealthy && metricState.Status == provider.Removed {
 		msm.isHealthy = true
+		msm.oppositeInARow = 0
+		msm.reminderCounter = 0
+		msm.lastFailureMessage = time.Time{}
 		return makeMessage(notifier.Recovery, "removed", metricState.Name, metricState.Description)
 	}
 
