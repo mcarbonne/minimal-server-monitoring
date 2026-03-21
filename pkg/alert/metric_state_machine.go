@@ -81,24 +81,16 @@ func (msm *MetricStateMachine) Update(metricState provider.MetricState, now time
 
 	// Special case: if service is removed, we want to clear the alert immediately
 	if !msm.isHealthy && metricState.Status == provider.Removed {
-		msm.isHealthy = true
-		msm.oppositeInARow = 0
-		msm.reminderCounter = 0
-		msm.lastFailureMessage = time.Time{}
-		return makeMessage(notifier.Recovery, "removed", metricState.Name, metricState.Description)
+		return msm.transitionToHealthy(metricState.Name, metricState.Description, "removed")
 	}
 
 	if msm.isHealthy {
 		if msm.oppositeInARow >= msm.unhealthyThreshold {
-			msm.isHealthy = false
-			msm.lastFailureMessage = now
-			msm.reminderCounter = 0
-			return makeMessage(notifier.Failure, "failed", metricState.Name, metricState.Description)
+			return msm.transitionToUnhealthy(metricState.Name, metricState.Description, now)
 		}
 	} else {
 		if msm.oppositeInARow >= msm.healthyThreshold {
-			msm.isHealthy = true
-			return makeMessage(notifier.Recovery, "recovered", metricState.Name, metricState.Description)
+			return msm.transitionToHealthy(metricState.Name, metricState.Description, "recovered")
 		} else if msm.shouldRemind(now) {
 			msm.lastFailureMessage = now
 			msm.reminderCounter++
@@ -107,4 +99,20 @@ func (msm *MetricStateMachine) Update(metricState provider.MetricState, now time
 
 	}
 	return nil
+}
+
+func (msm *MetricStateMachine) transitionToUnhealthy(name, description string, now time.Time) *notifier.Message {
+	msm.isHealthy = false
+	msm.oppositeInARow = 0
+	msm.lastFailureMessage = now
+	msm.reminderCounter = 0
+	return makeMessage(notifier.Failure, "failed", name, description)
+}
+
+func (msm *MetricStateMachine) transitionToHealthy(name, description string, reason string) *notifier.Message {
+	msm.isHealthy = true
+	msm.oppositeInARow = 0
+	msm.reminderCounter = 0
+	msm.lastFailureMessage = time.Time{}
+	return makeMessage(notifier.Recovery, reason, name, description)
 }
