@@ -96,6 +96,60 @@ func TestMetricStateMachine_SmartReminders(t *testing.T) {
 	assert.Assert(t, isContains(msg.Message, "reminder"))
 }
 
+func TestMetricStateMachine_Thresholds(t *testing.T) {
+	// Setup: Unhealthy requires 3, Healthy requires 2
+	msm := MakeMetricStateMachine(2, 3, 1*time.Hour, 3, customtypes.TimeOfDay{Hour: 8, Minute: 0})
+	metricID := "test_metric"
+	metricName := "Test Metric"
+	now := time.Now()
+
+	update := func(status provider.MetricStatus) *notifier.Message {
+		return msm.Update(provider.MetricState{MetricID: metricID, Name: metricName, Status: status}, now)
+	}
+
+	// 1. Initial state: Healthy
+	assert.Equal(t, true, msm.isHealthy)
+
+	// 2. First failure: remains healthy
+	assert.Assert(t, update(provider.Unhealthy) == nil)
+	assert.Equal(t, true, msm.isHealthy)
+
+	// 3. Second failure: remains healthy
+	assert.Assert(t, update(provider.Unhealthy) == nil)
+	assert.Equal(t, true, msm.isHealthy)
+
+	// 4. Interrupted by a Success: counter resets
+	assert.Assert(t, update(provider.Healthy) == nil)
+	assert.Equal(t, true, msm.isHealthy)
+	assert.Equal(t, uint(0), msm.oppositeInARow)
+
+	// 5. Restart failures: 1, 2
+	assert.Assert(t, update(provider.Unhealthy) == nil)
+	assert.Assert(t, update(provider.Unhealthy) == nil)
+
+	// 6. Third failure: becomes unhealthy
+	msg := update(provider.Unhealthy)
+	assert.Assert(t, msg != nil)
+	assert.Equal(t, notifier.Failure, msg.Type)
+	assert.Equal(t, false, msm.isHealthy)
+
+	// 7. First recovery: remains unhealthy
+	assert.Assert(t, update(provider.Healthy) == nil)
+	assert.Equal(t, false, msm.isHealthy)
+
+	// 8. Interrupted by a Failure: counter resets
+	assert.Assert(t, update(provider.Unhealthy) == nil)
+	assert.Equal(t, false, msm.isHealthy)
+	assert.Equal(t, uint(0), msm.oppositeInARow)
+
+	// 9. Second recovery attempt: 1, 2
+	assert.Assert(t, update(provider.Healthy) == nil)
+	msg = update(provider.Healthy)
+	assert.Assert(t, msg != nil)
+	assert.Equal(t, notifier.Recovery, msg.Type)
+	assert.Equal(t, true, msm.isHealthy)
+}
+
 func TestMetricStateMachine_Removal(t *testing.T) {
 	// Setup with high threshold
 	msm := MakeMetricStateMachine(10, 1, 1*time.Hour, 3, customtypes.TimeOfDay{Hour: 8, Minute: 0})
