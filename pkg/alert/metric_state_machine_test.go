@@ -101,7 +101,7 @@ func TestMetricStateMachine_Thresholds(t *testing.T) {
 	msm := MakeMetricStateMachine(2, 3, 1*time.Hour, 3, customtypes.TimeOfDay{Hour: 8, Minute: 0})
 	metricID := "test_metric"
 	metricName := "Test Metric"
-	now := time.Now()
+	now := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	update := func(status provider.MetricStatus) *notifier.Message {
 		return msm.Update(provider.MetricState{MetricID: metricID, Name: metricName, Status: status}, now)
