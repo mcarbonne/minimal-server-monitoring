@@ -168,7 +168,7 @@ func mapOnStruct(ctx *Context, type_ reflect.Type, raw any, level string) (refle
 		field := type_.Field(i)
 		if tag, ok := field.Tag.Lookup("json"); ok {
 			rawValue, ok := asMap[tag]
-			isOptional := field.Type.Kind() == reflect.Ptr
+			isOptional := field.Type.Kind() == reflect.Pointer
 			if !ok && !isOptional {
 				defaultValue, err := getDefaultValue(ctx, field)
 				if err != nil {
@@ -320,7 +320,7 @@ func mapOnAny(ctx *Context, type_ reflect.Type, raw any, level string) (reflect.
 		return mapOnSlice(ctx, type_, raw, level)
 	case reflect.Interface:
 		return reflect.ValueOf(raw), nil
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return mapOnPtr(ctx, type_, raw, level)
 	case reflect.Bool:
 		return mapOnBool(raw)
