@@ -2,7 +2,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Tag](https://img.shields.io/github/v/tag/mcarbonne/minimal-server-monitoring)](https://github.com/mcarbonne/minimal-server-monitoring/tags)
 [![Stars](https://img.shields.io/github/stars/mcarbonne/minimal-server-monitoring.svg)](https://github.com/mcarbonne/minimal-server-monitoring)
-[![Go Report Card](https://goreportcard.com/badge/github.com/mcarbonne/minimal-server-monitoring/v2)](https://goreportcard.com/report/github.com/mcarbonne/minimal-server-monitoring/v2)
+[![golangci-lint](https://github.com/mcarbonne/minimal-server-monitoring/actions/workflows/golang-lint.yml/badge.svg?branch=main)](https://github.com/mcarbonne/minimal-server-monitoring/actions/workflows/golang-lint.yml)
 
 This tool lets you monitor a typical home server running applications in containers and receive alerts on your smartphone. It is designed to be light and simple (no database, no GUI, a single configuration file).
 
