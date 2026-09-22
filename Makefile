@@ -3,7 +3,7 @@ all: local-run
 
 APP_NAME=minimal-server-monitoring
 
-.PHONY: $(APP_NAME)
+.PHONY: $(APP_NAME) build test-coverage test lint generate local-run docker-run
 
 build:
 	go build -o $(APP_NAME) ./cmd/$(APP_NAME)
@@ -15,9 +15,11 @@ test-coverage:
 test:
 	go test ./...
 	
-lint:
-	GOTOOLCHAIN=go1.25.5 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12
-	golangci-lint run ./...
+lint: tools/bin/golangci-lint
+	tools/bin/golangci-lint run ./...
+
+tools/bin/golangci-lint: tools/go.mod tools/go.sum
+	cd tools && go build -o bin/golangci-lint github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 generate:
 	go generate ./...

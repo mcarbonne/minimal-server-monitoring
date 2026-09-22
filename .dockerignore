@@ -1,2 +1,7 @@
 .git
 Dockerfile
+tools/bin/
+minimal-server-monitoring
+coverage.html
+coverage.out
+config.yml
