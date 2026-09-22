@@ -1,11 +1,11 @@
 # Build stage
-FROM golang:1.26.5-bookworm AS buildstage
+FROM golang:1.27.0-bookworm AS buildstage
 
 WORKDIR /src
 COPY . /src/.
 RUN make build
 
-FROM alpine:3.24.1 AS runtime
+FROM alpine:3.24.2 AS runtime
 
 RUN apk add libc6-compat
 COPY --from=buildstage --chmod=755 /src/minimal-server-monitoring /app/.
