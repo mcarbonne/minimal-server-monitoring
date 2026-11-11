@@ -8,18 +8,18 @@ require (
 	github.com/dustin/go-humanize v1.1.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/moby/sys/mountinfo v0.7.3
-	golang.org/x/sys v0.49.0
+	golang.org/x/sys v0.50.0
 	gotest.tools/v3 v3.5.2
 )
 
 require (
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
-	github.com/godbus/dbus/v5 v5.2.2 // indirect
+	github.com/godbus/dbus/v5 v5.2.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/mattn/go-colorable v0.1.15 // indirect
+	github.com/mattn/go-colorable v0.1.16 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/tools v0.18.0 // indirect
 	google.golang.org/protobuf v1.36.3 // indirect
 )
